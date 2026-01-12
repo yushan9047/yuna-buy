@@ -3,77 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yuna 代購現場連線系統</title>
+    <title>Yuna 代購管理系統</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
-        :root { --primary: #4a90e2; --bg: #f8f9fa; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 10px; }
-        .header { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 15px; text-align: center; }
-        .sync-tag { font-size: 12px; color: green; }
+        :root { --primary: #4a90e2; --success: #28a745; --danger: #dc3545; --bg: #f0f2f5; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
         
-        /* 商品列表卡片 */
-        .item-card { background: white; border-radius: 10px; padding: 12px; margin-bottom: 12px; border-left: 5px solid var(--primary); display: flex; gap: 10px; position: relative; }
-        .item-img { width: 80px; height: 80px; object-fit: cover; border-radius: 5px; background: #eee; }
-        .item-detail { flex: 1; }
-        .item-title { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
-        .item-meta { font-size: 12px; color: #666; display: flex; flex-wrap: wrap; gap: 8px; }
-        .buyer-tag { background: #e9ecef; padding: 2px 8px; border-radius: 10px; font-weight: bold; color: #333; }
-        
-        /* 浮動新增按鈕 */
-        .fab { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 999; }
+        /* 首頁按鈕樣式 */
+        #homePage { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 20px; padding: 20px; }
+        .main-btn { width: 100%; max-width: 300px; height: 100px; border-radius: 20px; border: none; font-size: 20px; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .main-btn:active { transform: scale(0.95); }
+        .btn-add { background: var(--primary); font-size: 40px; }
+        .btn-list { background: #673ab7; }
+        .btn-cust { background: #ff9800; }
 
-        /* 彈窗 */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-content { background: white; width: 90%; max-width: 500px; padding: 20px; border-radius: 15px; max-height: 90vh; overflow-y: auto; }
+        /* 頁面容器 */
+        .sub-page { display: none; padding: 20px; }
+        .sub-page.active { display: block; }
+        .header-bar { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .back-btn { background: #ddd; border: none; padding: 8px 15px; border-radius: 8px; font-size: 14px; }
+
+        /* 表單與卡片 */
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        .btn-group { display: flex; gap: 5px; margin-top: 5px; }
-        .btn-opt { flex: 1; padding: 10px; border: 1px solid #ddd; background: white; border-radius: 6px; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .btn-group { display: flex; gap: 10px; }
+        .btn-opt { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: white; }
         .btn-opt.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .btn-submit { background: var(--primary); color: white; width: 100%; padding: 15px; border-radius: 8px; font-size: 16px; margin-top: 10px; }
-        .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .submit-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 10px; }
+
+        /* 列表樣式 */
+        .item-row { background: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; display: flex; gap: 12px; position: relative; }
+        .item-img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
+        .item-info { flex: 1; font-size: 14px; }
+        .del-x { position: absolute; right: 10px; top: 10px; color: #ccc; border: none; background: none; font-size: 20px; }
+
+        /* 分類樣式 */
+        .cust-box { background: white; border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+        .cust-name { background: #eee; padding: 12px; font-weight: bold; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h2 style="margin:0">🛍️ 現場採購連線</h2>
-        <div id="status" class="sync-tag">📡 連線中...</div>
-        <button onclick="exportToExcel()" style="margin-top:10px; background:#207245; color:white; border:none; padding:5px 15px; border-radius:5px;">📊 匯出總清單</button>
+    <div id="homePage">
+        <h1 style="margin-bottom: 30px; color: #333;">Yuna 代購工具</h1>
+        <button class="main-btn btn-add" onclick="showPage('part1')"><span>＋</span></button>
+        <button class="main-btn btn-list" onclick="showPage('part2')">📋 購買明細</button>
+        <button class="main-btn btn-cust" onclick="showPage('part3')">👥 顧客分類</button>
     </div>
 
-    <div id="itemList"></div>
-
-    <div class="fab" onclick="openModal()">+</div>
-
-    <div id="addModal" class="modal">
-        <div class="modal-content">
-            <h3 style="margin-top:0">📸 紀錄新商品</h3>
+    <div id="part1" class="sub-page">
+        <div class="header-bar">
+            <button class="back-btn" onclick="showPage('home')">← 返回</button>
+            <h2 style="margin:0">新增購買紀錄</h2>
+        </div>
+        <div class="card">
+            <div class="form-group"><label>照片</label><input type="file" id="pImg" accept="image/*"></div>
+            <div class="form-group"><label>品名</label><input type="text" id="pName"></div>
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1"><label>未稅</label><input type="text" id="pPriceN"></div>
+                <div class="form-group" style="flex:1"><label>含稅</label><input type="text" id="pPriceTax"></div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1"><label>數量</label><input type="number" id="pQty" value="1"></div>
+                <div class="form-group" style="flex:1"><label>退稅%</label><input type="number" id="pTaxRate" value="10"></div>
+            </div>
+            <div class="form-group"><label>購買地點</label><input type="text" id="pLoc"></div>
+            <div class="form-group"><label>顧客名</label><input type="text" id="pCustomer"></div>
             <div class="form-group">
-                <label>商品照片</label>
-                <input type="file" id="pImg" accept="image/*">
-            </div>
-            <div class="form-group">
-                <label>品名</label>
-                <input type="text" id="pName" placeholder="請輸入品名">
-            </div>
-            <div class="form-group">
-                <label>購買地點</label>
-                <input type="text" id="pLoc" placeholder="例如：大丸百貨">
-            </div>
-            <div class="price-grid">
-                <div class="form-group"><label>未稅價</label><input type="text" id="pPriceN"></div>
-                <div class="form-group"><label>含稅價</label><input type="text" id="pPriceTax"></div>
-            </div>
-            <div class="price-grid">
-                <div class="form-group"><label>數量</label><input type="number" id="pQty" value="1"></div>
-                <div class="form-group"><label>退稅 %</label><input type="number" id="pTaxRate" value="10"></div>
-            </div>
-            <div class="form-group">
-                <label>購買人</label>
+                <label>由誰購買</label>
                 <div class="btn-group">
                     <button class="btn-opt" onclick="setBuyer('Ray', this)">Ray</button>
                     <button class="btn-opt" onclick="setBuyer('Nana', this)">Nana</button>
@@ -81,101 +82,134 @@
                 </div>
                 <input type="hidden" id="pBuyer">
             </div>
-            <button class="btn-submit" onclick="saveToCloud()">✅ 儲存紀錄</button>
-            <button onclick="closeModal()" style="width:100%; background:none; border:none; color:gray; margin-top:10px;">取消</button>
+            <button class="submit-btn" onclick="saveData()">🚀 確認儲存</button>
         </div>
     </div>
 
+    <div id="part2" class="sub-page">
+        <div class="header-bar">
+            <button class="back-btn" onclick="showPage('home')">← 返回</button>
+            <h2 style="margin:0">購買明細流水帳</h2>
+        </div>
+        <div id="allList"></div>
+    </div>
+
+    <div id="part3" class="sub-page">
+        <div class="header-bar">
+            <button class="back-btn" onclick="showPage('home')">← 返回</button>
+            <h2 style="margin:0">顧客分類清單</h2>
+        </div>
+        <button onclick="exportToExcel()" style="width:100%; background:var(--success); color:white; border:none; padding:12px; border-radius:10px; margin-bottom:15px; font-weight:bold;">📊 匯出總 Excel</button>
+        <div id="customerList"></div>
+    </div>
+
     <script>
-        // Firebase 配置 (請保留您原有的資訊)
+        // Firebase 配置 (保留您的資訊)
         const firebaseConfig = {
             apiKey: "AIzaSyBxy3g2MS18oJdE2v-JAZ9VWXZwZQ9W4yM",
             databaseURL: "https://yunabuy-cf20c-default-rtdb.firebaseio.com/",
             projectId: "yunabuy-cf20c",
             appId: "1:994921038504:web:6b1c54b9a71ee425b3f89d"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const itemsRef = db.ref('live_purchase');
+        const dataRef = db.ref('yuna_v3_data');
 
-        let allItems = [];
+        let rawData = {};
 
-        itemsRef.on('value', (snap) => {
-            allItems = snap.val() ? Object.values(snap.val()) : [];
-            document.getElementById('status').innerText = "✅ 雲端同步中";
-            render();
-        });
+        // 頁面切換邏輯
+        function showPage(pageId) {
+            document.getElementById('homePage').style.display = (pageId === 'home') ? 'flex' : 'none';
+            document.querySelectorAll('.sub-page').forEach(p => p.classList.remove('active'));
+            if(pageId !== 'home') document.getElementById(pageId).classList.add('active');
+        }
 
-        function openModal() { document.getElementById('addModal').style.display = 'flex'; }
-        function closeModal() { document.getElementById('addModal').style.display = 'none'; }
-
+        // 買手選擇
         function setBuyer(name, btn) {
             document.getElementById('pBuyer').value = name;
             document.querySelectorAll('.btn-opt').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
 
-        async function saveToCloud() {
+        // 監聽資料
+        dataRef.on('value', (snap) => {
+            rawData = snap.val() || {};
+            renderLists();
+        });
+
+        // 儲存
+        async function saveData() {
             const file = document.getElementById('pImg').files[0];
             let base64 = "";
-            if(file) base64 = await toBase64(file);
+            if(file) {
+                base64 = await new Promise(res => {
+                    const reader = new FileReader();
+                    reader.onload = e => res(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+            }
 
-            const newItem = {
-                id: Date.now(),
-                name: document.getElementById('pName').value,
-                loc: document.getElementById('pLoc').value,
+            const payload = {
+                name: document.getElementById('pName').value || "未名商品",
                 priceN: document.getElementById('pPriceN').value,
                 priceTax: document.getElementById('pPriceTax').value,
                 qty: document.getElementById('pQty').value,
                 taxRate: document.getElementById('pTaxRate').value,
+                loc: document.getElementById('pLoc').value,
+                customer: document.getElementById('pCustomer').value || "散客",
                 buyer: document.getElementById('pBuyer').value,
                 img: base64,
                 time: new Date().toLocaleString()
             };
 
-            if(!newItem.name || !newItem.buyer) { alert("請填寫品名與購買人"); return; }
-
-            itemsRef.push(newItem);
-            closeModal();
-            // 重置表單
-            document.getElementById('pName').value = '';
-            document.getElementById('pImg').value = '';
+            dataRef.push(payload);
+            alert("已成功新增！");
+            showPage('home');
+            // 重置
+            ['pName','pPriceN','pPriceTax','pCustomer','pLoc','pImg'].forEach(id => document.getElementById(id).value = '');
         }
 
-        const toBase64 = file => new Promise((res, rej) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => res(reader.result);
-            reader.onerror = e => rej(e);
-        });
+        function renderLists() {
+            const listArr = Object.entries(rawData).map(([id, val]) => ({ id, ...val })).reverse();
+            
+            // 渲染流水帳
+            document.getElementById('allList').innerHTML = listArr.map(i => `
+                <div class="item-row">
+                    <img src="${i.img || 'https://via.placeholder.com/60'}" class="item-img">
+                    <div class="item-info">
+                        <b>${i.name}</b> (${i.qty})<br>
+                        <span style="font-size:12px; color:#666;">客: ${i.customer} | 買: ${i.buyer}</span><br>
+                        <span style="font-size:12px; color:#666;">💰 ${i.priceTax} | 📍 ${i.loc}</span>
+                    </div>
+                    <button class="del-x" onclick="if(confirm('刪除？')) dataRef.child('${i.id}').remove()">✕</button>
+                </div>
+            `).join('');
 
-        function render() {
-            const list = document.getElementById('itemList');
-            list.innerHTML = allItems.reverse().map(i => `
-                <div class="item-card">
-                    <img src="${i.img || 'https://via.placeholder.com/80'}" class="item-img" onclick="window.open(this.src)">
-                    <div class="item-detail">
-                        <div class="item-title">${i.name}</div>
-                        <div class="item-meta">
-                            <span class="buyer-tag">👤 ${i.buyer}</span>
-                            <span>📦 數量: ${i.qty}</span>
-                            <span>📍 ${i.loc || '未註明'}</span>
-                        </div>
-                        <div style="margin-top:5px; font-size:13px;">
-                            💰 未稅: <b>${i.priceN}</b> | 含稅: <b>${i.priceTax}</b>
-                        </div>
-                        <div style="font-size:10px; color:#999; margin-top:5px;">🕒 ${i.time}</div>
+            // 渲染顧客分類
+            const groups = {};
+            listArr.forEach(i => {
+                if(!groups[i.customer]) groups[i.customer] = [];
+                groups[i.customer].push(i);
+            });
+            document.getElementById('customerList').innerHTML = Object.keys(groups).map(c => `
+                <div class="cust-box">
+                    <div class="cust-name"><span>👤 ${c}</span> <span>${groups[c].length}件</span></div>
+                    <div style="padding:10px; font-size:13px;">
+                        ${groups[c].map(p => `• ${p.name} (${p.priceTax}元)`).join('<br>')}
                     </div>
                 </div>
             `).join('');
         }
 
         function exportToExcel() {
-            const ws = XLSX.utils.json_to_sheet(allItems);
+            const exportData = Object.values(rawData).map(i => ({
+                "時間": i.time, "顧客": i.customer, "品名": i.name, "數量": i.qty,
+                "含稅價": i.priceTax, "地點": i.loc, "買手": i.buyer
+            }));
+            const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "採購紀錄");
-            XLSX.writeFile(wb, "代購連線紀錄.xlsx");
+            XLSX.utils.book_append_sheet(wb, ws, "採購總表");
+            XLSX.writeFile(wb, `代購清單_${new Date().toLocaleDateString()}.xlsx`);
         }
     </script>
 </body>
