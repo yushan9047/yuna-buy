@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yuna 代購雲端同步總表</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root { --primary: #4a90e2; --success: #28a745; --danger: #dc3545; --bg: #f4f7f6; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; padding-bottom: 80px; }
+        h1 { text-align: center; color: #333; font-size: 1.4rem; margin-bottom: 5px; }
+        .sync-status { text-align: center; font-size: 12px; margin-bottom: 15px; padding: 5px; border-radius: 20px; background: #e0e0e0; display: block; width: fit-content; margin: 0 auto 15px; }
+        .online { background: #d4edda; color: #155724; }
+        
+        /* 買家與商品卡片 */
+        .buyer-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); position: relative; }
+        .buyer-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 12px; }
+        .buyer-name { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+        
+        .product-item { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start; }
+        .prod-img { width: 85px; height: 85px; object-fit: cover; border-radius: 6px; background: #ddd; border: 1px solid #eee; }
+        .prod-info { flex: 1; }
+        
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 6px; font-weight: bold; }
+        .status-pending { background: #ffeeba; color: #856404; }
+        .status-done { background: #d4edda; color: #155724; }
+        .status-out { background: #f8d7da; color: #721c24; }
+
+        .price-row { display: flex; gap: 15px; font-size: 0.85rem; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ddd; }
+        .price-val { font-weight: bold; color: #000; }
+
+        /* 按鈕控制 */
+        button { border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+        .btn-main { background: var(--primary); color: white; width: 100%; padding: 12px; margin-bottom: 10px; font-size: 1rem; }
+        .btn-excel { background: #207245; color: white; width: 100%; padding: 12px; margin-bottom: 10px; }
+        .btn-add-p { background: #6c757d; color: white; width: 100%; margin-top: 10px; padding: 10px; }
+        .btn-status { background: #efefef; width: 100%; margin-top: 8px; padding: 8px; color: #333; }
+        .btn-del { color: var(--danger); background: none; font-size: 0.8rem; }
+
+        /* 彈窗 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 450px; max-height: 85vh; overflow-y: auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+    <h1>🛍️ Yuna 代購總表</h1>
+    <span id="sync-indicator" class="sync-status">📡 連線中...</span>
+
+    <button class="btn-excel" onclick="exportToExcel()">📊 匯出 Excel 總表</button>
+    <button class="btn-main" onclick="showModal('buyerModal')">+ 新增買家 (客戶)</button>
+
+    <div id="mainList"></div>
+
+    <div id="buyerModal" class="modal">
+        <div class="modal-content">
+            <h3>👥 新增客戶</h3>
+            <div class="form-group">
+                <label>買家姓名</label>
+                <input type="text" id="newBuyerName" placeholder="例如：王小美">
+            </div>
+            <button class="btn-main" onclick="addBuyer()">確認新增</button>
+            <button onclick="closeModals()" style="width:100%; background:none; color:#666;">取消</button>
+        </div>
+    </div>
+
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <h3>📦 新增商品紀錄</h3>
+            <input type="hidden" id="currentBuyerIdx">
+            <div class="form-group"><label>商品照片</label><input type="file" id="pImg" accept="image/*"></div>
+            <div class="form-group"><label>商品名稱</label><input type="text" id="pName"></div>
+            <div class="form-group"><label>購買地點</label><input type="text" id="pLoc" placeholder="例如：新宿大丸百貨"></div>
+            <div class="form-group">
+                <label>退稅紀錄</label>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="checkbox" id="pIsTax" style="width:20px; height:20px;"> 需退稅
+                    <input type="number" id="pTaxRate" style="width:70px;" placeholder="%">
+                </div>
+            </div>
+            <div class="form-group"><label>未退稅原價 (標價)</label><input type="text" id="pPriceN"></div>
+            <div class="form-group"><label>實際退稅價 (實付)</label><input type="text" id="pPriceT"></div>
+            <button class="btn-main" id="pSubmitBtn">加入清單</button>
+            <button onclick="closeModals()" style="width:100%; background:none; color:#666;">取消</button>
+        </div>
+    </div>
+
+    <script>
+        // Firebase 配置 (已整合您的資訊)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxy3g2MS18oJdE2v-JAZ9VWXZwZQ9W4yM",
+            databaseURL: "https://yunabuy-cf20c-default-rtdb.firebaseio.com/",
+            projectId: "yunabuy-cf20c",
+            appId: "1:994921038504:web:6b1c54b9a71ee425b3f89d"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const dataRef = db.ref('proxy_orders');
+
+        let cloudData = [];
+
+        // 即時監聽
+        dataRef.on('value', (snap) => {
+            cloudData = snap.val() || [];
+            document.getElementById('sync-indicator').innerText = "✅ 雲端同步中";
+            document.getElementById('sync-indicator').classList.add('online');
+            render();
+        });
+
+        function showModal(id, bIdx = null) {
+            document.getElementById(id).style.display = 'flex';
+            if(bIdx !== null) {
+                document.getElementById('pSubmitBtn').onclick = () => addProduct(bIdx);
+            }
+        }
+        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display='none'); }
+
+        function addBuyer() {
+            const name = document.getElementById('newBuyerName').value;
+            if(!name) return;
+            cloudData.push({ name: name, items: [] });
+            dataRef.set(cloudData);
+            document.getElementById('newBuyerName').value = '';
+            closeModals();
+        }
+
+        async function addProduct(bIdx) {
+            const file = document.getElementById('pImg').files[0];
+            let base64 = "";
+            if(file) base64 = await toBase64(file);
+
+            const newItem = {
+                img: base64,
+                name: document.getElementById('pName').value,
+                loc: document.getElementById('pLoc').value,
+                taxFree: document.getElementById('pIsTax').checked,
+                taxRate: document.getElementById('pTaxRate').value,
+                priceN: document.getElementById('pPriceN').value,
+                priceT: document.getElementById('pPriceT').value,
+                status: 'pending'
+            };
+
+            if(!cloudData[bIdx].items) cloudData[bIdx].items = [];
+            cloudData[bIdx].items.push(newItem);
+            dataRef.set(cloudData);
+            closeModals();
+            // 重設表單
+            document.getElementById('pName').value = '';
+            document.getElementById('pImg').value = '';
+        }
+
+        const toBase64 = file => new Promise((res, rej) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => res(reader.result);
+            reader.onerror = e => rej(e);
+        });
+
+        function updateStatus(bIdx, iIdx) {
+            const current = cloudData[bIdx].items[iIdx].status;
+            const next = current === 'pending' ? 'done' : (current === 'done' ? 'out' : 'pending');
+            cloudData[bIdx].items[iIdx].status = next;
+            dataRef.set(cloudData);
+        }
+
+        function exportToExcel() {
+            let exportRows = [];
+            cloudData.forEach(b => {
+                if(b.items) {
+                    b.items.forEach(i => {
+                        exportRows.push({
+                            "客戶": b.name, "商品": i.name, "地點": i.loc,
+                            "狀態": i.status === 'done' ? '已買' : (i.status === 'out' ? '缺貨' : '待買'),
+                            "未稅價": i.priceN, "退稅價": i.priceT, "稅率": i.taxRate + "%"
+                        });
+                    });
+                }
+            });
+            const ws = XLSX.utils.json_to_sheet(exportRows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "採購總表");
+            XLSX.writeFile(wb, "Yuna_代購清單.xlsx");
+        }
+
+        function render() {
+            const container = document.getElementById('mainList');
+            container.innerHTML = '';
+            cloudData.forEach((b, bIdx) => {
+                let itemsHtml = '';
+                if(b.items) {
+                    b.items.forEach((i, iIdx) => {
+                        const sClass = 'status-' + i.status;
+                        const sText = i.status === 'done' ? '🟢 已購買' : (i.status === 'out' ? '⚫ 缺貨' : '🔴 未購買');
+                        itemsHtml += `
+                            <div class="product-item">
+                                <img src="${i.img || 'https://via.placeholder.com/85?text=無圖'}" class="prod-img" onclick="window.open(this.src)">
+                                <div class="prod-info">
+                                    <div class="status-badge ${sClass}">${sText}</div>
+                                    <div style="font-weight:bold; font-size:15px;">${i.name}</div>
+                                    <div style="color:#666; font-size:12px; margin-top:2px;">📍 ${i.loc || '-'}</div>
+                                    <div class="price-row">
+                                        <div>原價: <span class="price-val">${i.priceN}</span></div>
+                                        <div>退稅: <span class="price-val">${i.priceT}</span></div>
+                                    </div>
+                                    <button class="btn-status" onclick="updateStatus(${bIdx}, ${iIdx})">切換狀態</button>
+                                </div>
+                                <button class="btn-del" onclick="if(confirm('刪除商品？')){cloudData[${bIdx}].items.splice(${iIdx},1);dataRef.set(cloudData);}">✕</button>
+                            </div>
+                        `;
+                    });
+                }
+                container.innerHTML += `
+                    <div class="buyer-card">
+                        <div class="buyer-header">
+                            <span class="buyer-name">👤 ${b.name}</span>
+                            <button class="btn-del" onclick="if(confirm('確定刪除買家 ${b.name}？')){cloudData.splice(${bIdx},1);dataRef.set(cloudData);}">刪除買家</button>
+                        </div>
+                        ${itemsHtml}
+                        <button class="btn-add-p" onclick="showModal('productModal', ${bIdx})">+ 為 ${b.name} 增加商品</button>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
