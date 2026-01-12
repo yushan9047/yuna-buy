@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yuna 代購管理系統</title>
+    <title>Yuna 代購管理系統 v4</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -11,45 +11,46 @@
         :root { --primary: #4a90e2; --success: #28a745; --danger: #dc3545; --bg: #f0f2f5; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
         
-        /* 首頁按鈕樣式 */
+        /* 首頁儀表板 */
         #homePage { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 20px; padding: 20px; }
-        .main-btn { width: 100%; max-width: 300px; height: 100px; border-radius: 20px; border: none; font-size: 20px; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.2s; }
-        .main-btn:active { transform: scale(0.95); }
+        .main-btn { width: 100%; max-width: 300px; height: 100px; border-radius: 20px; border: none; font-size: 20px; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .btn-add { background: var(--primary); font-size: 40px; }
         .btn-list { background: #673ab7; }
         .btn-cust { background: #ff9800; }
 
-        /* 頁面容器 */
-        .sub-page { display: none; padding: 20px; }
+        /* 子頁面 */
+        .sub-page { display: none; padding: 15px; padding-bottom: 50px; }
         .sub-page.active { display: block; }
-        .header-bar { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .back-btn { background: #ddd; border: none; padding: 8px 15px; border-radius: 8px; font-size: 14px; }
+        .header-bar { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .back-btn { background: #ddd; border: none; padding: 8px 12px; border-radius: 8px; font-size: 14px; }
 
-        /* 表單與卡片 */
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .form-group { margin-bottom: 12px; }
-        label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; }
+        /* 表單 */
+        .card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; }
         input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .btn-group { display: flex; gap: 10px; }
-        .btn-opt { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: white; }
+        .btn-group { display: flex; gap: 8px; }
+        .btn-opt { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: white; font-size: 14px; }
         .btn-opt.active { background: var(--primary); color: white; border-color: var(--primary); }
         .submit-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 10px; }
 
-        /* 列表樣式 */
-        .item-row { background: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; display: flex; gap: 12px; position: relative; }
-        .item-img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
-        .item-info { flex: 1; font-size: 14px; }
-        .del-x { position: absolute; right: 10px; top: 10px; color: #ccc; border: none; background: none; font-size: 20px; }
+        /* 明細列表 - 支援編輯的樣式 */
+        .item-row { background: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; display: flex; gap: 12px; position: relative; border-left: 5px solid #673ab7; }
+        .item-img { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; }
+        .item-info { flex: 1; font-size: 14px; line-height: 1.6; }
+        .editable-field { border-bottom: 1px dashed #ccc; padding: 1px 4px; cursor: pointer; color: #4a90e2; font-weight: 500; }
+        .editable-field:hover { background: #f9f9f9; }
+        .del-x { position: absolute; right: 10px; top: 10px; color: #ddd; border: none; background: none; font-size: 20px; padding: 5px; }
 
         /* 分類樣式 */
-        .cust-box { background: white; border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
-        .cust-name { background: #eee; padding: 12px; font-weight: bold; display: flex; justify-content: space-between; }
+        .cust-box { background: white; border-radius: 12px; margin-bottom: 10px; overflow: hidden; border: 1px solid #ddd; }
+        .cust-name { background: #f8f9fa; padding: 12px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
 
     <div id="homePage">
-        <h1 style="margin-bottom: 30px; color: #333;">Yuna 代購工具</h1>
+        <h1 style="margin-bottom: 25px; color: #333; letter-spacing: 1px;">🛍️ Yuna 代購系統</h1>
         <button class="main-btn btn-add" onclick="showPage('part1')"><span>＋</span></button>
         <button class="main-btn btn-list" onclick="showPage('part2')">📋 購買明細</button>
         <button class="main-btn btn-cust" onclick="showPage('part3')">👥 顧客分類</button>
@@ -58,21 +59,21 @@
     <div id="part1" class="sub-page">
         <div class="header-bar">
             <button class="back-btn" onclick="showPage('home')">← 返回</button>
-            <h2 style="margin:0">新增購買紀錄</h2>
+            <h2 style="margin:0">📸 新增連線紀錄</h2>
         </div>
         <div class="card">
             <div class="form-group"><label>照片</label><input type="file" id="pImg" accept="image/*"></div>
-            <div class="form-group"><label>品名</label><input type="text" id="pName"></div>
+            <div class="form-group"><label>品名</label><input type="text" id="pName" placeholder="商品名稱"></div>
             <div style="display:flex; gap:10px;">
-                <div class="form-group" style="flex:1"><label>未稅</label><input type="text" id="pPriceN"></div>
-                <div class="form-group" style="flex:1"><label>含稅</label><input type="text" id="pPriceTax"></div>
+                <div class="form-group" style="flex:1"><label>未稅價</label><input type="text" id="pPriceN"></div>
+                <div class="form-group" style="flex:1"><label>含稅價</label><input type="text" id="pPriceTax"></div>
             </div>
             <div style="display:flex; gap:10px;">
                 <div class="form-group" style="flex:1"><label>數量</label><input type="number" id="pQty" value="1"></div>
                 <div class="form-group" style="flex:1"><label>退稅%</label><input type="number" id="pTaxRate" value="10"></div>
             </div>
-            <div class="form-group"><label>購買地點</label><input type="text" id="pLoc"></div>
-            <div class="form-group"><label>顧客名</label><input type="text" id="pCustomer"></div>
+            <div class="form-group"><label>購買地點</label><input type="text" id="pLoc" placeholder="例如：大丸百貨"></div>
+            <div class="form-group"><label>顧客名</label><input type="text" id="pCustomer" placeholder="客人姓名"></div>
             <div class="form-group">
                 <label>由誰購買</label>
                 <div class="btn-group">
@@ -82,14 +83,14 @@
                 </div>
                 <input type="hidden" id="pBuyer">
             </div>
-            <button class="submit-btn" onclick="saveData()">🚀 確認儲存</button>
+            <button class="submit-btn" onclick="saveData()">✅ 確認儲存</button>
         </div>
     </div>
 
     <div id="part2" class="sub-page">
         <div class="header-bar">
             <button class="back-btn" onclick="showPage('home')">← 返回</button>
-            <h2 style="margin:0">購買明細流水帳</h2>
+            <h2 style="margin:0">📋 採購明細 (點擊文字可修改)</h2>
         </div>
         <div id="allList"></div>
     </div>
@@ -97,9 +98,9 @@
     <div id="part3" class="sub-page">
         <div class="header-bar">
             <button class="back-btn" onclick="showPage('home')">← 返回</button>
-            <h2 style="margin:0">顧客分類清單</h2>
+            <h2 style="margin:0">👥 顧客統計</h2>
         </div>
-        <button onclick="exportToExcel()" style="width:100%; background:var(--success); color:white; border:none; padding:12px; border-radius:10px; margin-bottom:15px; font-weight:bold;">📊 匯出總 Excel</button>
+        <button onclick="exportToExcel()" style="width:100%; background:var(--success); color:white; border:none; padding:15px; border-radius:12px; margin-bottom:15px; font-weight:bold; font-size:16px;">📊 匯出總 Excel</button>
         <div id="customerList"></div>
     </div>
 
@@ -113,31 +114,27 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const dataRef = db.ref('yuna_v3_data');
+        const dataRef = db.ref('yuna_v4_data'); // 使用新路徑以防資料衝突
 
         let rawData = {};
 
-        // 頁面切換邏輯
         function showPage(pageId) {
             document.getElementById('homePage').style.display = (pageId === 'home') ? 'flex' : 'none';
             document.querySelectorAll('.sub-page').forEach(p => p.classList.remove('active'));
             if(pageId !== 'home') document.getElementById(pageId).classList.add('active');
         }
 
-        // 買手選擇
         function setBuyer(name, btn) {
             document.getElementById('pBuyer').value = name;
             document.querySelectorAll('.btn-opt').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
 
-        // 監聽資料
         dataRef.on('value', (snap) => {
             rawData = snap.val() || {};
             renderLists();
         });
 
-        // 儲存
         async function saveData() {
             const file = document.getElementById('pImg').files[0];
             let base64 = "";
@@ -151,37 +148,62 @@
 
             const payload = {
                 name: document.getElementById('pName').value || "未名商品",
-                priceN: document.getElementById('pPriceN').value,
-                priceTax: document.getElementById('pPriceTax').value,
-                qty: document.getElementById('pQty').value,
-                taxRate: document.getElementById('pTaxRate').value,
-                loc: document.getElementById('pLoc').value,
+                priceN: document.getElementById('pPriceN').value || "0",
+                priceTax: document.getElementById('pPriceTax').value || "0",
+                qty: document.getElementById('pQty').value || "1",
+                taxRate: document.getElementById('pTaxRate').value || "10",
+                loc: document.getElementById('pLoc').value || "",
                 customer: document.getElementById('pCustomer').value || "散客",
-                buyer: document.getElementById('pBuyer').value,
+                buyer: document.getElementById('pBuyer').value || "未指定",
                 img: base64,
                 time: new Date().toLocaleString()
             };
 
             dataRef.push(payload);
-            alert("已成功新增！");
+            alert("儲存成功！");
             showPage('home');
-            // 重置
             ['pName','pPriceN','pPriceTax','pCustomer','pLoc','pImg'].forEach(id => document.getElementById(id).value = '');
+        }
+
+        // 編輯核心功能
+        function quickEdit(id, field, currentVal) {
+            let promptMsg = {
+                'name': '請輸入新的品名：',
+                'qty': '請輸入新的數量：',
+                'priceTax': '請輸入新的含稅總價：',
+                'customer': '請輸入新的顧客姓名：',
+                'buyer': '請輸入買手 (Ray/Nana/Cupid)：'
+            };
+            
+            const newValue = prompt(promptMsg[field] || '請輸入新數值：', currentVal);
+            
+            if (newValue !== null && newValue.trim() !== "") {
+                const updateData = {};
+                updateData[field] = newValue;
+                dataRef.child(id).update(updateData);
+            }
         }
 
         function renderLists() {
             const listArr = Object.entries(rawData).map(([id, val]) => ({ id, ...val })).reverse();
             
-            // 渲染流水帳
+            // 渲染明細 (加上可編輯屬性)
             document.getElementById('allList').innerHTML = listArr.map(i => `
                 <div class="item-row">
-                    <img src="${i.img || 'https://via.placeholder.com/60'}" class="item-img">
+                    <img src="${i.img || 'https://via.placeholder.com/70'}" class="item-img" onclick="window.open(this.src)">
                     <div class="item-info">
-                        <b>${i.name}</b> (${i.qty})<br>
-                        <span style="font-size:12px; color:#666;">客: ${i.customer} | 買: ${i.buyer}</span><br>
-                        <span style="font-size:12px; color:#666;">💰 ${i.priceTax} | 📍 ${i.loc}</span>
+                        <span class="editable-field" onclick="quickEdit('${i.id}', 'name', '${i.name}')">${i.name}</span> 
+                        x <span class="editable-field" onclick="quickEdit('${i.id}', 'qty', '${i.qty}')">${i.qty}</span><br>
+                        
+                        客：<span class="editable-field" onclick="quickEdit('${i.id}', 'customer', '${i.customer}')">${i.customer}</span> | 
+                        買手：<span class="editable-field" onclick="quickEdit('${i.id}', 'buyer', '${i.buyer}')">${i.buyer}</span><br>
+                        
+                        💰 含稅：<span class="editable-field" onclick="quickEdit('${i.id}', 'priceTax', '${i.priceTax}')">${i.priceTax}</span> | 
+                        📍 ${i.loc || '未註明'}<br>
+                        
+                        <span style="font-size:10px; color:#aaa;">🕒 ${i.time}</span>
                     </div>
-                    <button class="del-x" onclick="if(confirm('刪除？')) dataRef.child('${i.id}').remove()">✕</button>
+                    <button class="del-x" onclick="if(confirm('確定刪除這筆紀錄嗎？')) dataRef.child('${i.id}').remove()">✕</button>
                 </div>
             `).join('');
 
@@ -193,9 +215,12 @@
             });
             document.getElementById('customerList').innerHTML = Object.keys(groups).map(c => `
                 <div class="cust-box">
-                    <div class="cust-name"><span>👤 ${c}</span> <span>${groups[c].length}件</span></div>
-                    <div style="padding:10px; font-size:13px;">
-                        ${groups[c].map(p => `• ${p.name} (${p.priceTax}元)`).join('<br>')}
+                    <div class="cust-name"><span>👤 ${c}</span> <span>${groups[c].length} 件商品</span></div>
+                    <div style="padding:10px; font-size:13px; line-height:1.8;">
+                        ${groups[c].map(p => `• <b>${p.name}</b> (${p.qty}件) - ${p.priceTax}元`).join('<br>')}
+                        <div style="margin-top:8px; border-top:1px solid #eee; padding-top:5px; text-align:right; font-weight:bold; color:var(--danger);">
+                            小計: ${groups[c].reduce((sum, item) => sum + (parseFloat(item.priceTax)||0), 0)} 元
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -204,12 +229,12 @@
         function exportToExcel() {
             const exportData = Object.values(rawData).map(i => ({
                 "時間": i.time, "顧客": i.customer, "品名": i.name, "數量": i.qty,
-                "含稅價": i.priceTax, "地點": i.loc, "買手": i.buyer
+                "含稅價": i.priceTax, "地點": i.loc, "買手": i.buyer, "退稅%": i.taxRate
             }));
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "採購總表");
-            XLSX.writeFile(wb, `代購清單_${new Date().toLocaleDateString()}.xlsx`);
+            XLSX.writeFile(wb, `Yuna代購紀錄_${new Date().toLocaleDateString()}.xlsx`);
         }
     </script>
 </body>
