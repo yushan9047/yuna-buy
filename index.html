@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yuna 代購管理系統 v9</title>
+    <title>Yuna 代購管理系統 v10</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -11,7 +11,6 @@
         :root { --primary: #4a90e2; --success: #28a745; --danger: #dc3545; --bg: #f2f4f7; --text: #333; }
         body { font-family: -apple-system, "PingFang TC", sans-serif; background: var(--bg); margin: 0; color: var(--text); }
         
-        /* 導覽按鈕 */
         #homePage { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 20px; padding: 20px; box-sizing: border-box; }
         .main-btn { width: 100%; max-width: 320px; height: 110px; border-radius: 24px; border: none; font-size: 22px; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
         .btn-add { background: linear-gradient(135deg, #6e8efb, #4a90e2); font-size: 45px; }
@@ -42,17 +41,16 @@
 
         .submit-btn { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; margin-top: 20px; }
 
-        /* 列表樣式優化 */
         .item-row { background: white; padding: 15px; border-radius: 18px; margin-bottom: 15px; display: flex; gap: 15px; position: relative; border: 1px solid #f0f0f0; }
         .item-img { width: 90px; height: 90px; object-fit: cover; border-radius: 12px; background: #eee; flex-shrink: 0; }
-        .item-info { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .item-info { flex: 1; display: flex; flex-direction: column; }
         .item-name-row { font-size: 17px; font-weight: 800; color: #1a1a1a; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
         .qty-badge { background: #f0f4f8; color: var(--primary); padding: 2px 8px; border-radius: 6px; font-size: 13px; }
         
         .price-row { display: flex; gap: 15px; margin: 5px 0; padding: 8px 0; border-top: 1px solid #f9f9f9; border-bottom: 1px solid #f9f9f9; }
         .price-item { display: flex; flex-direction: column; }
         .price-label { font-size: 11px; color: #999; }
-        .price-val { font-size: 15px; font-weight: bold; color: #444; }
+        .price-val { font-size: 15px; font-weight: bold; }
         .price-val.tax-in { color: var(--danger); }
 
         .meta-row { font-size: 13px; color: #666; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
@@ -60,16 +58,30 @@
         .tag-tax { background: #e3f2fd; color: #1976d2; }
         .tag-card { background: #fff9c4; color: #f57f17; }
         
-        .editable-field { border-bottom: 1px dashed #4a90e2; cursor: pointer; color: #4a90e2; }
+        .editable-field { border-bottom: 1px dashed #4a90e2; cursor: pointer; color: #4a90e2; font-weight: bold; }
         .del-x { position: absolute; right: 10px; top: 10px; color: #ddd; border: none; background: none; font-size: 24px; }
         .danger-zone { margin-top: 40px; padding: 20px; border-top: 2px dashed #ffcdd2; text-align: center; }
         .btn-clear-all { background: white; color: var(--danger); border: 2px solid var(--danger); padding: 12px 20px; border-radius: 12px; font-weight: bold; width: 100%; }
 
         .cust-box { background: white; border-radius: 18px; margin-bottom: 15px; border: 1px solid #eee; overflow: hidden; }
         .cust-name { background: #f8f9fa; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; }
+
+        /* 自訂彈窗選擇器樣式 */
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center; }
+        .modal-content { background:white; padding:20px; border-radius:20px; width:80%; max-width:300px; text-align:center; }
+        .modal-btn { display:block; width:100%; padding:15px; margin:10px 0; border:1px solid #eee; border-radius:10px; font-size:16px; font-weight:bold; background:#f9f9f9; cursor:pointer; }
+        .modal-btn:active { background:#eee; }
     </style>
 </head>
 <body>
+
+    <div id="selectorModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modalTitle">請選擇</h3>
+            <div id="modalOptions"></div>
+            <button onclick="closeModal()" style="margin-top:10px; background:none; border:none; color:gray;">取消</button>
+        </div>
+    </div>
 
     <div id="homePage">
         <h1 style="margin: 0; font-size: 28px; color: #333;">Yuna 採購連線</h1>
@@ -81,8 +93,8 @@
     <div id="part1" class="sub-page">
         <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>新增採購項目</h2></div>
         <div class="card">
-            <div class="form-group"><label>📷 商品照片</label><input type="file" id="pImg" accept="image/*"></div>
-            <div class="form-group"><label>📦 品名</label><input type="text" id="pName" placeholder="尚未輸入"></div>
+            <div class="form-group"><label>📷 照片</label><input type="file" id="pImg" accept="image/*"></div>
+            <div class="form-group"><label>📦 品名</label><input type="text" id="pName" placeholder="點此輸入"></div>
             <div style="display:flex; gap:12px;">
                 <div class="form-group" style="flex:1"><label>💴 未稅價</label><input type="number" id="pPriceN" placeholder="0"></div>
                 <div class="form-group" style="flex:1"><label>💰 含稅價</label><input type="number" id="pPriceTax" placeholder="0"></div>
@@ -92,9 +104,9 @@
                 <input type="checkbox" id="taxToggle" style="width:22px; height:22px;" onchange="toggleTaxInput()">
                 <label for="taxToggle" style="margin:0">這件商品要退稅</label>
             </div>
-            <div id="taxRateInputArea" class="form-group"><label>📉 退稅百分比 (%)</label><input type="number" id="pTaxRate" placeholder="0"></div>
+            <div id="taxRateInputArea" class="form-group"><label>📉 退稅 %</label><input type="number" id="pTaxRate" placeholder="0"></div>
             <div class="form-group"><label>👤 顧客名</label><input type="text" id="pCustomer" placeholder="未填寫"></div>
-            <div class="form-group"><label>📍 購買地點</label><input type="text" id="pLoc" placeholder="未填寫"></div>
+            <div class="form-group"><label>📍 地點</label><input type="text" id="pLoc" placeholder="未填寫"></div>
             <div class="form-group">
                 <label>🧤 負責買手</label>
                 <div class="btn-group">
@@ -104,7 +116,7 @@
                 </div>
                 <input type="hidden" id="pBuyer">
                 <div id="rayCardOptions">
-                    <label style="color: #1976d2; font-size: 12px;">💳 選擇支付方式</label>
+                    <label style="color: #1976d2; font-size: 12px;">💳 支付方式</label>
                     <div class="sub-btn-group">
                         <button class="sub-btn" onclick="setRayCard('na爸卡', this)">na爸卡</button>
                         <button class="sub-btn" onclick="setRayCard('ray卡', this)">ray卡</button>
@@ -112,20 +124,18 @@
                     <input type="hidden" id="pRayCard">
                 </div>
             </div>
-            <button class="submit-btn" onclick="saveData()">🚀 確認儲存 (可事後補填)</button>
+            <button class="submit-btn" onclick="saveData()">🚀 確認儲存</button>
         </div>
     </div>
 
     <div id="part2" class="sub-page">
-        <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>採購明細 (點擊補填)</h2></div>
+        <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>採購明細 (點擊藍字修改)</h2></div>
         <div id="allList"></div>
-        <div class="danger-zone">
-            <button class="btn-clear-all" onclick="clearAllData()">🗑️ 刪除所有紀錄</button>
-        </div>
+        <div class="danger-zone"><button class="btn-clear-all" onclick="clearAllData()">🗑️ 刪除所有紀錄</button></div>
     </div>
 
     <div id="part3" class="sub-page">
-        <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>顧客統計報表</h2></div>
+        <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>顧客統計</h2></div>
         <button onclick="exportToExcel()" style="width:100%; background:var(--success); color:white; border:none; padding:16px; border-radius:15px; margin-bottom:20px; font-weight:bold;">📊 匯出 Excel</button>
         <div id="customerList"></div>
     </div>
@@ -139,9 +149,10 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const dataRef = db.ref('yuna_v9_data'); 
+        const dataRef = db.ref('yuna_v10_data'); 
 
         let rawData = {};
+        let currentEditingId = ""; // 用於彈窗修改
 
         function showPage(pageId) {
             document.getElementById('homePage').style.display = (pageId === 'home') ? 'flex' : 'none';
@@ -150,18 +161,17 @@
             window.scrollTo(0,0);
         }
 
+        // --- 新增紀錄用 ---
         function toggleTaxInput() {
             const isChecked = document.getElementById('taxToggle').checked;
             document.getElementById('taxRateInputArea').style.display = isChecked ? 'block' : 'none';
         }
-
         function setBuyer(name, btn) {
             document.getElementById('pBuyer').value = name;
             document.querySelectorAll('.btn-opt').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById('rayCardOptions').style.display = (name === 'Ray') ? 'block' : 'none';
         }
-
         function setRayCard(cardName, btn) {
             document.getElementById('pRayCard').value = cardName;
             document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
@@ -186,16 +196,16 @@
             const hasTax = document.getElementById('taxToggle').checked;
             const buyer = document.getElementById('pBuyer').value;
             const payload = {
-                name: document.getElementById('pName').value || "點擊補填品名",
+                name: document.getElementById('pName').value || "未命名",
                 priceN: document.getElementById('pPriceN').value || "0",
                 priceTax: document.getElementById('pPriceTax').value || "0",
                 qty: document.getElementById('pQty').value || "0",
                 isTaxFree: hasTax,
                 taxRate: hasTax ? (document.getElementById('pTaxRate').value || "0") : "0",
-                loc: document.getElementById('pLoc').value || "未填寫地點",
+                loc: document.getElementById('pLoc').value || "未填寫",
                 customer: document.getElementById('pCustomer').value || "散客",
-                buyer: buyer || "未選取買手",
-                cardInfo: buyer === 'Ray' ? (document.getElementById('pRayCard').value || "未選卡片") : "",
+                buyer: buyer || "未指定",
+                cardInfo: buyer === 'Ray' ? (document.getElementById('pRayCard').value || "未選卡") : "",
                 img: base64,
                 time: new Date().toLocaleString()
             };
@@ -206,8 +216,7 @@
 
         function resetForm() {
             ['pName','pPriceN','pPriceTax','pQty','pTaxRate','pCustomer','pLoc','pImg','pRayCard','pBuyer'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.value = '';
+                const el = document.getElementById(id); if(el) el.value = '';
             });
             document.getElementById('taxToggle').checked = false;
             document.querySelectorAll('.btn-opt, .sub-btn').forEach(b => b.classList.remove('active'));
@@ -215,19 +224,52 @@
             toggleTaxInput();
         }
 
-        function clearAllData() {
-            if(confirm("確定要刪除所有紀錄嗎？")) dataRef.remove().then(() => alert("資料已清空"));
+        // --- 彈窗修改邏輯 ---
+        function openBuyerSelector(id) {
+            currentEditingId = id;
+            document.getElementById('modalTitle').innerText = "選擇買手";
+            const options = ['Ray', 'Nana', 'Cupid'];
+            document.getElementById('modalOptions').innerHTML = options.map(opt => `
+                <button class="modal-btn" onclick="updateBuyerSelection('${opt}')">${opt}</button>
+            `).join('');
+            document.getElementById('selectorModal').style.display = 'flex';
+        }
+
+        function updateBuyerSelection(val) {
+            dataRef.child(currentEditingId).update({ buyer: val });
+            if(val !== 'Ray') dataRef.child(currentEditingId).update({ cardInfo: "" }); // 如果改掉 Ray，清空卡片
+            closeModal();
+        }
+
+        function openCardSelector(id) {
+            currentEditingId = id;
+            document.getElementById('modalTitle').innerText = "選擇支付卡片";
+            const options = ['na爸卡', 'ray卡'];
+            document.getElementById('modalOptions').innerHTML = options.map(opt => `
+                <button class="modal-btn" onclick="updateCardSelection('${opt}')">${opt}</button>
+            `).join('');
+            document.getElementById('selectorModal').style.display = 'flex';
+        }
+
+        function updateCardSelection(val) {
+            dataRef.child(currentEditingId).update({ cardInfo: val, buyer: 'Ray' });
+            closeModal();
+        }
+
+        function closeModal() {
+            document.getElementById('selectorModal').style.display = 'none';
         }
 
         function quickEdit(id, field, currentVal) {
             let newVal = prompt(`修改 ${field}：`, currentVal);
             if (newVal !== null) {
-                let updates = {};
-                updates[field] = newVal;
-                // 如果是改買手，可以讓使用者填寫卡片資訊
-                if(field === 'cardInfo') updates['buyer'] = 'Ray'; 
+                let updates = {}; updates[field] = newVal;
                 dataRef.child(id).update(updates);
             }
+        }
+
+        function clearAllData() {
+            if(confirm("確定要刪除所有紀錄嗎？")) dataRef.remove().then(() => alert("資料已清空"));
         }
 
         function renderLists() {
@@ -246,8 +288,8 @@
                         </div>
                         <div class="meta-row">
                             <span class="tag">👤 <span class="editable-field" onclick="quickEdit('${i.id}', 'customer', '${i.customer}')">${i.customer}</span></span>
-                            <span class="tag">🧤 <span class="editable-field" onclick="quickEdit('${i.id}', 'buyer', '${i.buyer}')">${i.buyer}</span></span>
-                            ${i.buyer === 'Ray' || i.cardInfo ? `<span class="tag tag-card">💳 <span class="editable-field" onclick="quickEdit('${i.id}', 'cardInfo', '${i.cardInfo || '補填卡片'}')">${i.cardInfo || '補填卡片'}</span></span>` : ''}
+                            <span class="tag">🧤 <span class="editable-field" onclick="openBuyerSelector('${i.id}')">${i.buyer}</span></span>
+                            ${i.buyer === 'Ray' || i.cardInfo ? `<span class="tag tag-card">💳 <span class="editable-field" onclick="openCardSelector('${i.id}')">${i.cardInfo || '選卡片'}</span></span>` : ''}
                             <span class="tag">📍 <span class="editable-field" onclick="quickEdit('${i.id}', 'loc', '${i.loc}')">${i.loc}</span></span>
                             ${i.isTaxFree ? `<span class="tag tag-tax">✂️ <span class="editable-field" onclick="quickEdit('${i.id}', 'taxRate', '${i.taxRate}')">${i.taxRate}</span>%</span>` : ''}
                         </div>
@@ -277,7 +319,7 @@
         function exportToExcel() {
             const exportData = Object.values(rawData).map(i => ({
                 "時間": i.time, "顧客": i.customer, "品名": i.name, "數量": i.qty,
-                "未稅": i.priceN, "含稅": i.priceTax, "退稅%": i.taxRate, "買手": i.buyer, "卡片": i.cardInfo, "地點": i.loc
+                "未稅": i.priceN, "含稅": i.priceTax, "買手": i.buyer, "卡片": i.cardInfo, "地點": i.loc
             }));
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
