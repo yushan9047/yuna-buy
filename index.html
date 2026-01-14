@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yuna 代購管理系統 v12</title>
+    <title>Yuna 代購管理系統 v13</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -11,9 +11,12 @@
         :root { --primary: #4a90e2; --success: #28a745; --danger: #dc3545; --warning: #f39c12; --bg: #f2f4f7; --text: #333; }
         body { font-family: -apple-system, "PingFang TC", sans-serif; background: var(--bg); margin: 0; color: var(--text); }
         
-        #homePage { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; min-height: 100vh; align-content: center; }
+        .main-header { text-align: center; padding: 25px 0 10px 0; grid-column: span 2; }
+        .main-header h1 { margin: 0; font-size: 26px; color: #333; letter-spacing: 1px; }
+
+        #homePage { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 20px 20px 20px; min-height: 100vh; align-content: center; }
         .main-btn { aspect-ratio: 1/1; border-radius: 24px; border: none; font-size: 18px; font-weight: bold; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 100%; }
-        .btn-add { background: linear-gradient(135deg, #6e8efb, #4a90e2); grid-column: span 2; aspect-ratio: auto; height: 100px; font-size: 30px; }
+        .btn-add { background: linear-gradient(135deg, #6e8efb, #4a90e2); grid-column: span 2; aspect-ratio: auto; height: 100px; font-size: 24px; }
         .btn-list { background: linear-gradient(135deg, #8e44ad, #673ab7); }
         .btn-pre { background: linear-gradient(135deg, #2ecc71, #27ae60); }
         .btn-cust { background: linear-gradient(135deg, #f39c12, #e67e22); grid-column: span 2; aspect-ratio: auto; height: 80px; }
@@ -24,46 +27,43 @@
         .back-btn { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 12px; font-size: 14px; font-weight: bold; }
 
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 6px; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #666; }
         input { width: 100%; padding: 12px; border: 1.5px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
         
-        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--success); }
-        input:checked + .slider:before { transform: translateX(24px); }
-
-        .submit-btn { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; }
+        .submit-btn { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; margin-top: 10px; }
         
         .item-row { background: white; padding: 15px; border-radius: 18px; margin-bottom: 12px; display: flex; gap: 12px; position: relative; border: 1px solid #eee; align-items: center; }
-        .item-img { width: 65px; height: 65px; object-fit: cover; border-radius: 10px; background: #f9f9f9; }
-        .item-info { flex: 1; }
-        .tag { background: #eee; padding: 3px 8px; border-radius: 6px; font-size: 11px; margin-right: 5px; }
-        .tag-bought { background: #e8f5e9; color: #2e7d32; font-weight: bold; }
-        .tag-not { background: #f5f5f5; color: #999; }
+        .item-img { width: 70px; height: 70px; object-fit: cover; border-radius: 10px; background: #f9f9f9; }
+        .item-info { flex: 1; overflow: hidden; }
+        .editable-field { border-bottom: 1px dashed #4a90e2; cursor: pointer; color: #4a90e2; font-weight: bold; }
+        
+        .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 5px 0; font-size: 13px; }
+        .price-tag { background: #f8f9fa; padding: 4px 8px; border-radius: 6px; }
+        .price-label { font-size: 10px; color: #999; display: block; }
 
         .cust-box { background: white; border-radius: 18px; margin-bottom: 15px; border: 1px solid #eee; overflow: hidden; }
         .cust-name { background: #f8f9fa; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; }
-        .section-title { font-size: 12px; color: #999; margin: 10px 0 5px 0; font-weight: bold; border-left: 3px solid #ddd; padding-left: 8px; }
 
         .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center; }
         .modal-content { background:white; padding:20px; border-radius:20px; width:80%; max-width:300px; text-align:center; }
-        .modal-btn { display:block; width:100%; padding:15px; margin:10px 0; border:1px solid #eee; border-radius:10px; font-size:16px; font-weight:bold; }
+        .modal-btn { display:block; width:100%; padding:15px; margin:10px 0; border:1px solid #eee; border-radius:10px; font-size:16px; font-weight:bold; background:#fff; cursor:pointer; }
     </style>
 </head>
 <body>
 
     <div id="selectorModal" class="modal-overlay">
         <div class="modal-content">
-            <h3 id="modalTitle">選擇</h3>
+            <h3 id="modalTitle">選擇項目</h3>
             <div id="modalOptions"></div>
             <button onclick="closeModal()" style="margin-top:10px; background:none; border:none; color:gray;">取消</button>
         </div>
     </div>
 
     <div id="homePage">
+        <div class="main-header">
+            <h1>Yuna 代購管理系統</h1>
+        </div>
         <button class="main-btn btn-add" onclick="showPage('part1')"><span>＋ 新增現場採購</span></button>
         <button class="main-btn btn-list" onclick="showPage('part2')">📋 採購明細</button>
         <button class="main-btn btn-pre" onclick="showPage('part4')">📝 預購商品</button>
@@ -71,51 +71,47 @@
     </div>
 
     <div id="part1" class="sub-page">
-        <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>新增採購</h2></div>
+        <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>新增現場紀錄</h2></div>
         <div class="card">
             <div class="form-group"><label>📷 照片</label><input type="file" id="pImg" accept="image/*"></div>
-            <div class="form-group"><label>📦 品名</label><input type="text" id="pName" placeholder="商品名稱"></div>
-            <div style="display:flex; gap:12px;">
-                <div class="form-group" style="flex:1"><label>💴 未稅價</label><input type="number" id="pPriceN"></div>
-                <div class="form-group" style="flex:1"><label>💰 含稅價</label><input type="number" id="pPriceTax"></div>
+            <div class="form-group"><label>📦 品名</label><input type="text" id="pName" placeholder="請輸入商品名稱"></div>
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1"><label>💴 含稅成本</label><input type="number" id="pPriceTax" placeholder="買入價"></div>
+                <div class="form-group" style="flex:1"><label>💰 販售價格</label><input type="number" id="pPriceSell" placeholder="賣出價"></div>
             </div>
-            <div class="form-group"><label>🔢 數量</label><input type="number" id="pQty"></div>
-            <div class="form-group"><label>👤 顧客名</label><input type="text" id="pCustomer"></div>
-            <div class="form-group"><label>🧤 買手</label><input type="text" id="pBuyer" placeholder="點擊選取" onclick="openBuyerSelectorForAdd('pBuyer')" readonly></div>
-            <button class="submit-btn" onclick="saveData()">🚀 確認儲存採購</button>
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1"><label>🔢 數量</label><input type="number" id="pQty" value="1"></div>
+                <div class="form-group" style="flex:1"><label>👤 顧客名</label><input type="text" id="pCustomer" placeholder="客名"></div>
+            </div>
+            <div class="form-group"><label>🧤 負責買手</label><input type="text" id="pBuyer" placeholder="點擊選擇" onclick="openBuyerSelectorForAdd('pBuyer')" readonly style="background:#fdfdfd"></div>
+            <button class="submit-btn" onclick="saveData()">🚀 儲存紀錄</button>
         </div>
     </div>
 
     <div id="part2" class="sub-page">
-        <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>採購明細</h2></div>
+        <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>現場採購明細</h2></div>
         <div id="allList"></div>
     </div>
 
     <div id="part3" class="sub-page">
-        <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>顧客統計報表</h2></div>
-        <button onclick="exportToExcel()" style="width:100%; background:var(--success); color:white; border:none; padding:16px; border-radius:15px; margin-bottom:20px; font-weight:bold;">📊 匯出 Excel</button>
+        <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>各項帳單匯總</h2></div>
+        <button onclick="exportToExcel()" style="width:100%; background:var(--success); color:white; border:none; padding:16px; border-radius:15px; margin-bottom:20px; font-weight:bold;">📊 匯出完整 Excel 報表</button>
         <div id="customerList"></div>
     </div>
 
     <div id="part4" class="sub-page">
-        <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>預購清單</h2></div>
-        
+        <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>預購清單管理</h2></div>
         <div class="card">
-            <h4 style="margin:0 0 15px 0">＋ 新增預購項目</h4>
+            <h4 style="margin:0 0 12px 0">＋ 新增預購</h4>
             <div class="form-group"><label>📷 商品照片</label><input type="file" id="preImg" accept="image/*"></div>
             <div class="form-group"><label>📦 品名</label><input type="text" id="preName"></div>
-            <div class="form-group"><label>👤 購買人 (顧客)</label><input type="text" id="preCust"></div>
-            <div style="display:flex; gap:12px;">
+            <div class="form-group"><label>👤 顧客名</label><input type="text" id="preCust"></div>
+            <div style="display:flex; gap:10px;">
                 <div class="form-group" style="flex:1"><label>💴 購買價</label><input type="number" id="preBuyPrice"></div>
                 <div style="flex:1"><label>💰 販售價</label><input type="number" id="preSellPrice"></div>
             </div>
-            <div class="form-group" style="display:flex; align-items:center; gap:15px;">
-                <label style="margin:0">是否已購買：</label>
-                <label class="switch"><input type="checkbox" id="preStatus"><span class="slider"></span></label>
-            </div>
             <button class="submit-btn" style="background:var(--success)" onclick="savePreOrder()">✅ 儲存預購</button>
         </div>
-
         <div id="preOrderList"></div>
     </div>
 
@@ -128,8 +124,8 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const dataRef = db.ref('yuna_v12_data'); 
-        const preRef = db.ref('yuna_v12_preorder'); 
+        const dataRef = db.ref('yuna_v13_data'); 
+        const preRef = db.ref('yuna_v13_preorder'); 
 
         let rawData = {};
         let rawPre = {};
@@ -153,16 +149,22 @@
             }
             dataRef.push({
                 name: document.getElementById('pName').value || "未命名",
-                priceN: document.getElementById('pPriceN').value || "0",
                 priceTax: document.getElementById('pPriceTax').value || "0",
-                qty: document.getElementById('pQty').value || "0",
+                priceSell: document.getElementById('pPriceSell').value || "0",
+                qty: document.getElementById('pQty').value || "1",
                 customer: document.getElementById('pCustomer').value || "散客",
-                buyer: document.getElementById('pBuyer').value || "未指定",
+                buyer: document.getElementById('pBuyer').value || "未選",
                 img: base64,
                 time: new Date().toLocaleString()
             });
-            document.getElementById('pImg').value = '';
+            resetAddForm();
             showPage('home');
+        }
+
+        function resetAddForm() {
+            ['pName','pPriceTax','pPriceSell','pQty','pCustomer','pBuyer','pImg'].forEach(id => {
+                const el = document.getElementById(id); if(el) el.value = (id === 'pQty' ? '1' : '');
+            });
         }
 
         async function savePreOrder() {
@@ -176,48 +178,64 @@
                 });
             }
             preRef.push({
-                name: document.getElementById('preName').value || "未命名預購",
+                name: document.getElementById('preName').value || "未命名",
                 customer: document.getElementById('preCust').value || "散客",
                 buyPrice: document.getElementById('preBuyPrice').value || "0",
                 sellPrice: document.getElementById('preSellPrice').value || "0",
-                isBought: document.getElementById('preStatus').checked,
+                isBought: false,
                 img: base64,
                 time: new Date().toLocaleString()
             });
             ['preName','preCust','preBuyPrice','preSellPrice','preImg'].forEach(id => document.getElementById(id).value='');
-            document.getElementById('preStatus').checked = false;
         }
 
         dataRef.on('value', snap => { rawData = snap.val() || {}; renderLists(); });
         preRef.on('value', snap => { rawPre = snap.val() || {}; renderLists(); });
 
+        function quickEdit(path, id, field, current) {
+            let newVal = prompt(`修改 ${field}:`, current);
+            if(newVal !== null) {
+                const ref = path === 'buy' ? dataRef : preRef;
+                let up = {}; up[field] = newVal;
+                ref.child(id).update(up);
+            }
+        }
+
         function renderLists() {
+            // 現場清單
             const buyArr = Object.entries(rawData).map(([id, val]) => ({ id, ...val })).reverse();
             document.getElementById('allList').innerHTML = buyArr.map(i => `
                 <div class="item-row">
                     <img src="${i.img || ''}" class="item-img" onclick="if(this.src) window.open(this.src)">
                     <div class="item-info">
-                        <div style="font-weight:bold">${i.name} (x${i.qty})</div>
-                        <div style="font-size:13px;color:red">¥${i.priceTax}</div>
-                        <div style="font-size:12px">👤 ${i.customer} | 🧤 ${i.buyer}</div>
+                        <div style="font-weight:bold"><span class="editable-field" onclick="quickEdit('buy','${i.id}','name','${i.name}')">${i.name}</span> (x<span class="editable-field" onclick="quickEdit('buy','${i.id}','qty','${i.qty}')">${i.qty}</span>)</div>
+                        <div class="price-grid">
+                            <div class="price-tag"><span class="price-label">含稅成本</span>¥ <span class="editable-field" onclick="quickEdit('buy','${i.id}','priceTax','${i.priceTax}')">${i.priceTax}</span></div>
+                            <div class="price-tag"><span class="price-label">販售價格</span>¥ <span class="editable-field" onclick="quickEdit('buy','${i.id}','priceSell','${i.priceSell}')">${i.priceSell}</span></div>
+                        </div>
+                        <div style="font-size:12px;color:#666">👤 <span class="editable-field" onclick="quickEdit('buy','${i.id}','customer','${i.customer}')">${i.customer}</span> | 🧤 ${i.buyer}</div>
                     </div>
-                    <button onclick="if(confirm('確定刪除？')) dataRef.child('${i.id}').remove()" style="border:none;background:none;color:#ccc">✕</button>
+                    <button onclick="if(confirm('刪除？')) dataRef.child('${i.id}').remove()" style="border:none;background:none;color:#ccc">✕</button>
                 </div>
             `).join('');
 
+            // 預購清單
             const preArr = Object.entries(rawPre).map(([id, val]) => ({ id, ...val })).reverse();
             document.getElementById('preOrderList').innerHTML = preArr.map(i => `
                 <div class="item-row" style="border-left: 5px solid ${i.isBought ? '#2ecc71' : '#ccc'}">
-                    <img src="${i.img || ''}" class="item-img" onclick="if(this.src) window.open(this.src)">
+                    <img src="${i.img || ''}" class="item-img">
                     <div class="item-info">
                         <div style="font-weight:bold">${i.name}</div>
-                        <div style="font-size:12px">售價: ¥${i.sellPrice} | 顧客: ${i.customer}</div>
+                        <div class="price-grid">
+                            <div class="price-tag"><span class="price-label">購買價</span>¥ ${i.buyPrice}</div>
+                            <div class="price-tag" style="background:#e3f2fd"><span class="price-label">販售價</span>¥ ${i.sellPrice}</div>
+                        </div>
                         <div style="margin-top:5px">
-                            <span class="tag ${i.isBought ? 'tag-bought' : 'tag-not'}">${i.isBought ? '● 已買到' : '○ 缺貨中'}</span>
-                            <button onclick="preRef.child('${i.id}').update({isBought: ${!i.isBought}})" style="font-size:10px;padding:2px 5px">切換</button>
+                            <span class="tag ${i.isBought ? 'tag-bought' : 'tag-not'}">👤 ${i.customer} | ${i.isBought ? '已買到' : '缺貨中'}</span>
+                            <button onclick="preRef.child('${i.id}').update({isBought: ${!i.isBought}})" style="font-size:10px;padding:2px 5px">切換狀態</button>
                         </div>
                     </div>
-                    <button onclick="if(confirm('確定刪除？')) preRef.child('${i.id}').remove()" style="border:none;background:none;color:#ccc">✕</button>
+                    <button onclick="if(confirm('刪除？')) preRef.child('${i.id}').remove()" style="border:none;background:none;color:#ccc">✕</button>
                 </div>
             `).join('');
 
@@ -230,22 +248,21 @@
             preArr.forEach(i => { if(!groups[i.customer]) groups[i.customer] = { buy: [], pre: [] }; groups[i.customer].pre.push(i); });
 
             document.getElementById('customerList').innerHTML = Object.keys(groups).map(c => {
-                const buyTotal = groups[c].buy.reduce((s, n) => s + (parseFloat(n.priceTax)||0), 0);
-                // 預購僅計算「已買到」的金額
+                // 帳單總額計算：現場販售價 + 預購販售價(僅已買到)
+                const buyTotal = groups[c].buy.reduce((s, n) => s + (parseFloat(n.priceSell) * (parseInt(n.qty)||1)), 0);
                 const preTotal = groups[c].pre.reduce((s, n) => s + (n.isBought ? (parseFloat(n.sellPrice)||0) : 0), 0);
                 
                 return `
                 <div class="cust-box">
-                    <div class="cust-name"><span>👤 ${c}</span> <span style="color:var(--danger)">帳單 ¥${buyTotal + preTotal}</span></div>
-                    <div style="padding:15px; font-size:14px;">
+                    <div class="cust-name"><span>👤 ${c}</span> <span style="color:var(--primary)">應收 ¥${buyTotal + preTotal}</span></div>
+                    <div style="padding:15px; font-size:14px; line-height:1.6;">
                         ${groups[c].buy.length > 0 ? `
-                            <div class="section-title">📍 現場採購清單</div>
-                            ${groups[c].buy.map(p => `• ${p.name} (x${p.qty}) - ¥${p.priceTax}`).join('<br>')}
+                            <div style="color:#999;font-size:11px;margin-bottom:5px;">● 現場採購</div>
+                            ${groups[c].buy.map(p => `• ${p.name} (x${p.qty}) - <span style="color:var(--primary)">¥${p.priceSell}</span>`).join('<br>')}
                         ` : ''}
-                        
                         ${groups[c].pre.length > 0 ? `
-                            <div class="section-title">📝 預購訂單狀態</div>
-                            ${groups[c].pre.map(p => `• ${p.name} - ¥${p.sellPrice} [${p.isBought ? '<b style="color:green">已買到</b>':'缺貨'}]`).join('<br>')}
+                            <div style="color:#999;font-size:11px;margin:10px 0 5px 0;">● 預購訂單</div>
+                            ${groups[c].pre.map(p => `• ${p.name} - <span style="color:var(--primary)">¥${p.sellPrice}</span> [${p.isBought ? '已買':'缺貨'}]`).join('<br>')}
                         ` : ''}
                     </div>
                 </div>`;
@@ -253,7 +270,7 @@
         }
 
         function openBuyerSelectorForAdd(targetId) {
-            document.getElementById('modalTitle').innerText = "選擇買手";
+            document.getElementById('modalTitle').innerText = "選擇負責買手";
             const options = ['Ray', 'Nana', 'Cupid'];
             document.getElementById('modalOptions').innerHTML = options.map(opt => `
                 <button class="modal-btn" onclick="document.getElementById('${targetId}').value='${opt}'; closeModal();">${opt}</button>
@@ -263,12 +280,12 @@
         function closeModal() { document.getElementById('selectorModal').style.display = 'none'; }
 
         function exportToExcel() {
-            const data = Object.values(rawData).map(i => ({ "類型": "現場", "顧客": i.customer, "品名": i.name, "數量": i.qty, "售價": i.priceTax }));
-            const preData = Object.values(rawPre).map(i => ({ "類型": "預購", "顧客": i.customer, "品名": i.name, "數量": 1, "售價": i.sellPrice, "狀態": i.isBought ? "已買到" : "缺貨" }));
+            const data = Object.values(rawData).map(i => ({ "類型": "現場", "顧客": i.customer, "品名": i.name, "數量": i.qty, "成本": i.priceTax, "販售價": i.priceSell, "利潤": (i.priceSell - i.priceTax)*i.qty }));
+            const preData = Object.values(rawPre).map(i => ({ "類型": "預購", "顧客": i.customer, "品名": i.name, "數量": 1, "成本": i.buyPrice, "販售價": i.sellPrice, "狀態": i.isBought ? "已買到" : "缺貨" }));
             const ws = XLSX.utils.json_to_sheet([...data, ...preData]);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "總報表");
-            XLSX.writeFile(wb, `Yuna代購匯總_${new Date().toLocaleDateString()}.xlsx`);
+            XLSX.utils.book_append_sheet(wb, ws, "總對帳單");
+            XLSX.writeFile(wb, `Yuna對帳單_${new Date().toLocaleDateString()}.xlsx`);
         }
     </script>
 </body>
