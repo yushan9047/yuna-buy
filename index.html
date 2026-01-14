@@ -3,15 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yuna 代購管理系統 v21</title>
+    <title>Yuna 代購管理系統 v22</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
         :root { --primary: #4a90e2; --success: #28a745; --danger: #dc3545; --warning: #f39c12; --bg: #f2f4f7; --text: #333; }
         body { font-family: -apple-system, "PingFang TC", sans-serif; background: var(--bg); margin: 0; color: var(--text); }
+        
+        /* 修正：首頁與子頁面標題置中 */
         .main-header { text-align: center; padding: 25px 0 10px 0; }
-        .main-header h1 { margin: 0; font-size: 26px; color: #333; letter-spacing: 1px; }
+        .main-header h1 { margin: 0; font-size: 26px; color: #333; letter-spacing: 1px; text-align: center; }
+        .header-bar h2 { flex: 1; text-align: center; margin-right: 40px; } /* 讓子頁面標題在返回鍵旁也能置中 */
+
         #homePage { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 20px 20px 20px; min-height: 100vh; align-content: center; }
         .main-btn { aspect-ratio: 1/1; border-radius: 24px; border: none; font-size: 18px; font-weight: bold; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 100%; }
         .btn-add { background: linear-gradient(135deg, #6e8efb, #4a90e2); grid-column: span 2; aspect-ratio: auto; height: 100px; font-size: 24px; }
@@ -21,7 +25,7 @@
         .sub-page { display: none; padding: 15px; padding-bottom: 80px; }
         .sub-page.active { display: block; }
         .header-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; position: sticky; top: 0; background: var(--bg); padding: 10px 0; z-index: 100; }
-        .back-btn { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 12px; font-size: 14px; font-weight: bold; }
+        .back-btn { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 12px; font-size: 14px; font-weight: bold; flex-shrink: 0; }
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #666; }
@@ -131,8 +135,8 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const dataRef = db.ref('yuna_v21_data'); 
-        const preRef = db.ref('yuna_v21_preorder'); 
+        const dataRef = db.ref('yuna_v22_data'); 
+        const preRef = db.ref('yuna_v22_preorder'); 
 
         let rawData = {}; let rawPre = {}; let activePickerCallback = null;
 
@@ -163,7 +167,6 @@
         function handlePick(val) { if(activePickerCallback) activePickerCallback(val); closeModal(); }
         function closeModal() { document.getElementById('selectorModal').style.display = 'none'; activePickerCallback = null; }
 
-        // 修改照片的核心邏輯
         function triggerImgEdit(refType, id) {
             const input = document.getElementById('editImgInput');
             input.onchange = async (e) => {
@@ -176,7 +179,7 @@
                 });
                 const ref = (refType === 'buy') ? dataRef : preRef;
                 ref.child(id).update({ img: base64 });
-                input.value = ""; // 清空
+                input.value = "";
             };
             input.click();
         }
