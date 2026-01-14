@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <center><title>Yuna 代購管理系統 v24</title></center>
+    <title>Yuna 代購管理系統 v25</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -12,48 +12,12 @@
         body { font-family: -apple-system, "PingFang TC", sans-serif; background: var(--bg); margin: 0; color: var(--text); }
         
         /* --- 標題調整 --- */
-        /* 僅首頁大標題居中 */
-        .main-header { 
-            text-align: center; 
-            padding: 25px 0 10px 0; 
-            width: 100%;
-        }
-        .main-header h1 { 
-            margin: 0; 
-            font-size: 26px; 
-            color: #333; 
-            letter-spacing: 1px; 
-            display: inline-block; /* 確保在容器內居中 */
-        }
+        .main-header { text-align: center; padding: 25px 0 10px 0; width: 100%; }
+        .main-header h1 { margin: 0; font-size: 26px; color: #333; letter-spacing: 1px; display: inline-block; }
 
-        /* 子頁面標題恢復靠左 */
-        .header-bar { 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            margin-bottom: 20px; 
-            position: sticky; 
-            top: 0; 
-            background: var(--bg); 
-            padding: 10px 0; 
-            z-index: 100; 
-        }
-        .header-bar h2 { 
-            margin: 0; 
-            font-size: 20px; 
-            text-align: left; /* 恢復靠左 */
-            flex: none; 
-        }
-        .back-btn { 
-            background: white; 
-            border: 1px solid #ddd; 
-            padding: 8px 16px; 
-            border-radius: 12px; 
-            font-size: 14px; 
-            font-weight: bold; 
-            flex-shrink: 0; 
-        }
-        /* ---------------------- */
+        .header-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; position: sticky; top: 0; background: var(--bg); padding: 10px 0; z-index: 100; }
+        .header-bar h2 { margin: 0; font-size: 20px; text-align: left; flex: none; }
+        .back-btn { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 12px; font-size: 14px; font-weight: bold; flex-shrink: 0; }
 
         #homePage { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 20px 20px 20px; min-height: 100vh; align-content: center; }
         .main-btn { aspect-ratio: 1/1; border-radius: 24px; border: none; font-size: 18px; font-weight: bold; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 100%; }
@@ -61,6 +25,7 @@
         .btn-list { background: linear-gradient(135deg, #8e44ad, #673ab7); }
         .btn-pre { background: linear-gradient(135deg, #2ecc71, #27ae60); }
         .btn-cust { background: linear-gradient(135deg, #f39c12, #e67e22); grid-column: span 2; aspect-ratio: auto; height: 80px; }
+        
         .sub-page { display: none; padding: 15px; padding-bottom: 80px; }
         .sub-page.active { display: block; }
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 15px; }
@@ -71,6 +36,7 @@
         .btn-opt { flex: 1; padding: 12px; border: 1.5px solid #eee; border-radius: 10px; background: white; font-weight: bold; color: #666; cursor: pointer; }
         .btn-opt.active { background: var(--primary); color: white; border-color: var(--primary); }
         .submit-btn { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; margin-top: 10px; }
+        
         .item-row { background: white; padding: 15px; border-radius: 18px; margin-bottom: 12px; display: flex; gap: 12px; border: 1px solid #eee; align-items: flex-start; }
         .item-img { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; background: #eee; flex-shrink: 0; cursor: pointer; border: 1px dashed #ccc; }
         .item-info { flex: 1; min-width: 0; }
@@ -81,6 +47,7 @@
         .tag-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
         .tag { background: #eee; padding: 4px 8px; border-radius: 6px; font-size: 11px; color: #555; cursor: pointer; }
         .tag-active { background: #e3f2fd; color: #1976d2; border-color: #bbdefb; }
+        
         .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; justify-content:center; align-items:flex-end; }
         .modal-content { background:white; padding:20px; border-radius:20px 20px 0 0; width:100%; max-height:70vh; overflow-y:auto; }
         .modal-title { font-weight: bold; font-size: 18px; margin-bottom: 15px; text-align: center; color: #333; }
@@ -145,6 +112,7 @@
     </div>
 
     <div id="part2" class="sub-page"><div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>採購明細</h2></div><div id="allList"></div></div>
+    
     <div id="part3" class="sub-page"><div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>顧客統計</h2></div><button onclick="exportToExcel()" style="width:100%; background:var(--success); color:white; border:none; padding:16px; border-radius:15px; margin-bottom:20px; font-weight:bold;">📊 匯出對帳 Excel</button><div id="customerList"></div></div>
 
     <div id="part4" class="sub-page">
@@ -155,9 +123,10 @@
             <div class="form-group"><label>📦 品名</label><input type="text" id="preName" placeholder="名稱"></div>
             <div class="form-group"><label>👤 顧客名</label><input type="text" id="preCust" placeholder="客名"></div>
             <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1"><label>🔢 數量</label><input type="number" id="preQty" value="1"></div>
                 <div class="form-group" style="flex:1"><label>💴 成本</label><input type="number" id="preBuyPrice" placeholder="0"></div>
-                <div class="form-group" style="flex:1"><label>💰 售價</label><input type="number" id="preSellPrice" placeholder="0"></div>
             </div>
+            <div class="form-group"><label>💰 售價</label><input type="number" id="preSellPrice" placeholder="0"></div>
             <button class="submit-btn" style="background:var(--success)" onclick="savePreOrder()">✅ 儲存預購</button>
         </div>
         <div id="preOrderList"></div>
@@ -172,8 +141,8 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const dataRef = db.ref('yuna_v24_data'); 
-        const preRef = db.ref('yuna_v24_preorder'); 
+        const dataRef = db.ref('yuna_v25_data'); 
+        const preRef = db.ref('yuna_v25_preorder'); 
 
         let rawData = {}; let rawPre = {}; let activePickerCallback = null;
 
@@ -233,7 +202,10 @@
                 cardInfo: document.getElementById('pBuyer').value === 'Ray' ? (document.getElementById('pRayCard').value || "") : "",
                 img: base64, time: new Date().toLocaleString()
             });
-            ['pName','pPriceN','pPriceTax','pPriceSell','pLoc','pCustomer','pImg'].forEach(id=>document.getElementById(id).value='');
+            ['pName','pPriceN','pPriceTax','pPriceSell','pLoc','pCustomer','pImg','pQty'].forEach(id=> {
+                let el = document.getElementById(id);
+                if(el) el.value = (id === 'pQty' ? '1' : '');
+            });
             showPage('home');
         }
 
@@ -243,10 +215,14 @@
             if(file) base64 = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(file); });
             preRef.push({
                 name: document.getElementById('preName').value || "未命名", customer: document.getElementById('preCust').value || "未填",
+                qty: document.getElementById('preQty').value || "1",
                 buyPrice: document.getElementById('preBuyPrice').value || "0", sellPrice: document.getElementById('preSellPrice').value || "0",
                 isBought: false, img: base64, time: new Date().toLocaleString()
             });
-            ['preName','preCust','preBuyPrice','preSellPrice','preImg'].forEach(id=>document.getElementById(id).value='');
+            ['preName','preCust','preBuyPrice','preSellPrice','preImg','preQty'].forEach(id=> {
+                let el = document.getElementById(id);
+                if(el) el.value = (id === 'preQty' ? '1' : '');
+            });
         }
 
         dataRef.on('value', snap => { rawData = snap.val() || {}; renderLists(); });
@@ -277,7 +253,7 @@
                             <div class="price-tag" style="background:#e3f2fd;"><span class="price-label">💰 售價</span>¥ <span class="editable-field" onclick="editInList('${i.id}','priceSell','${i.priceSell}')">${i.priceSell}</span></div>
                         </div>
                         <div class="tag-row">
-                            <span class="tag tag-active" onclick="editInList('${i.id}','qty','${i.qty}')">x ${i.qty}</span>
+                            <span class="tag tag-active" onclick="editInList('${i.id}','qty','${i.qty}')">x ${i.qty || 1}</span>
                             <span class="tag tag-active" onclick="editInList('${i.id}','customer','${i.customer}')">👤 ${i.customer}</span>
                             <span class="tag" onclick="editInList('${i.id}','loc','${i.loc}')">📍 ${i.loc}</span>
                             <span class="tag tag-active" onclick="editInList('${i.id}','buyer','${i.buyer}')">🧤 ${i.buyer}</span>
@@ -302,6 +278,7 @@
                             <div class="price-tag" style="background:#e3f2fd;"><span class="price-label">售價</span>¥ <span class="editable-field" onclick="editPreOrder('${i.id}','sellPrice','${i.sellPrice}')">${i.sellPrice}</span></div>
                         </div>
                         <div style="margin-top:5px">
+                            <span class="tag tag-active" onclick="editPreOrder('${i.id}','qty','${i.qty}')">x ${i.qty || 1}</span>
                             <span class="tag tag-active" onclick="editPreOrder('${i.id}','customer','${i.customer}')">👤 ${i.customer}</span>
                             <span class="tag ${i.isBought ? 'tag-active' : ''}" onclick="preRef.child('${i.id}').update({isBought: ${!i.isBought}})">${i.isBought ? '● 已買到' : '○ 缺貨中'}</span>
                         </div>
@@ -318,14 +295,14 @@
             preArr.forEach(i => { if(!groups[i.customer]) groups[i.customer] = { buy: [], pre: [] }; groups[i.customer].pre.push(i); });
             document.getElementById('customerList').innerHTML = Object.keys(groups).map(c => {
                 const bTotal = groups[c].buy.reduce((s, n) => s + (parseFloat(n.priceSell)*(parseInt(n.qty)||1)), 0);
-                const pTotal = groups[c].pre.reduce((s, n) => s + (n.isBought ? parseFloat(n.sellPrice) : 0), 0);
+                const pTotal = groups[c].pre.reduce((s, n) => s + (n.isBought ? (parseFloat(n.sellPrice)*(parseInt(n.qty)||1)) : 0), 0);
                 return `<div class="card">
                     <div style="font-weight:bold; display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding-bottom:10px;"><span>👤 ${c}</span><span style="color:var(--primary)">總應收 ¥${bTotal + pTotal}</span></div>
                     <div style="padding-top:10px; font-size:12px; line-height:1.6; color:#666;">
-                        ${groups[c].buy.map(p => `• ${p.name} (x${p.qty}) - ¥${p.priceSell}`).join('<br>')}
+                        ${groups[c].buy.map(p => `• ${p.name} (x${p.qty || 1}) - ¥${p.priceSell}`).join('<br>')}
                         ${groups[c].pre.map(p => {
                             const statusLabel = p.isBought ? '<span style="color:#28a745; font-weight:bold;">[已買]</span>' : '<span style="color:#dc3545;">[缺貨]</span>';
-                            return `• ${statusLabel} ${p.name} - ${p.isBought ? '¥'+p.sellPrice : '<strike>¥'+p.sellPrice+'</strike>'}`;
+                            return `• ${statusLabel} ${p.name} (x${p.qty || 1}) - ${p.isBought ? '¥'+p.sellPrice : '<strike>¥'+p.sellPrice+'</strike>'}`;
                         }).join('<br>')}
                     </div>
                 </div>`;
@@ -334,7 +311,7 @@
 
         function exportToExcel() {
             const d = Object.values(rawData).map(i => ({ "類型": "現場", "顧客": i.customer, "品名": i.name, "數量": i.qty, "售價": i.priceSell, "成本": i.priceTax }));
-            const p = Object.values(rawPre).map(i => ({ "類型": "預購", "顧客": i.customer, "品名": i.name, "售價": i.sellPrice, "狀態": i.isBought ? "已買" : "缺" }));
+            const p = Object.values(rawPre).map(i => ({ "類型": "預購", "顧客": i.customer, "品名": i.name, "數量": i.qty, "售價": i.sellPrice, "狀態": i.isBought ? "已買" : "缺" }));
             const ws = XLSX.utils.json_to_sheet([...d, ...p]);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "對帳單");
@@ -343,4 +320,3 @@
     </script>
 </body>
 </html>
-
