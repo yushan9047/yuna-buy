@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yuna 代購管理系統 v19</title>
+    <title>Yuna 代購管理系統 v20</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -136,8 +136,8 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const dataRef = db.ref('yuna_v19_data'); 
-        const preRef = db.ref('yuna_v19_preorder'); 
+        const dataRef = db.ref('yuna_v20_data'); 
+        const preRef = db.ref('yuna_v20_preorder'); 
 
         let rawData = {};
         let rawPre = {};
@@ -162,7 +162,6 @@
             btn.classList.add('active');
         }
 
-        // 核心選單開啟函式
         function openPicker(title, options, callback) {
             document.getElementById('modalTitle').innerText = title;
             activePickerCallback = callback;
@@ -315,7 +314,11 @@
                     </div>
                     <div style="padding-top:10px; font-size:12px; line-height:1.6; color:#666;">
                         ${groups[c].buy.map(p => `• ${p.name} (x${p.qty}) - ¥${p.priceSell}`).join('<br>')}
-                        ${groups[c].pre.filter(p=>p.isBought).map(p => `• [預購] ${p.name} - ¥${p.sellPrice}`).join('<br>')}
+                        ${groups[c].pre.map(p => {
+                            const statusLabel = p.isBought ? '<span style="color:#28a745; font-weight:bold;">[已買]</span>' : '<span style="color:#dc3545;">[缺貨]</span>';
+                            const priceDisplay = p.isBought ? `¥${p.sellPrice}` : '<strike>¥' + p.sellPrice + '</strike> (不計費)';
+                            return `• ${statusLabel} ${p.name} - ${priceDisplay}`;
+                        }).join('<br>')}
                     </div>
                 </div>`;
             }).join('');
