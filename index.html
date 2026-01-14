@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yuna 代購管理系統 v20</title>
+    <title>Yuna 代購管理系統 v21</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -31,7 +31,7 @@
         .btn-opt.active { background: var(--primary); color: white; border-color: var(--primary); }
         .submit-btn { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; margin-top: 10px; }
         .item-row { background: white; padding: 15px; border-radius: 18px; margin-bottom: 12px; display: flex; gap: 12px; border: 1px solid #eee; align-items: flex-start; }
-        .item-img { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; background: #f9f9f9; flex-shrink: 0; }
+        .item-img { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; background: #eee; flex-shrink: 0; cursor: pointer; border: 1px dashed #ccc; }
         .item-info { flex: 1; min-width: 0; }
         .editable-field { border-bottom: 1px dashed #4a90e2; cursor: pointer; color: #4a90e2; font-weight: bold; }
         .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 5px 0; }
@@ -44,9 +44,12 @@
         .modal-content { background:white; padding:20px; border-radius:20px 20px 0 0; width:100%; max-height:70vh; overflow-y:auto; }
         .modal-title { font-weight: bold; font-size: 18px; margin-bottom: 15px; text-align: center; color: #333; }
         .modal-btn { display:block; width:100%; padding:16px; margin:8px 0; border:1px solid #eee; border-radius:12px; font-size:16px; font-weight:bold; background:#fdfdfd; text-align: center; }
+        .img-tip { font-size: 9px; color: #999; text-align: center; display: block; margin-top: 2px; }
     </style>
 </head>
 <body>
+
+    <input type="file" id="editImgInput" style="display:none" accept="image/*">
 
     <div id="selectorModal" class="modal-overlay" onclick="if(event.target === this) closeModal()">
         <div class="modal-content">
@@ -100,16 +103,8 @@
         </div>
     </div>
 
-    <div id="part2" class="sub-page">
-        <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>採購明細</h2></div>
-        <div id="allList"></div>
-    </div>
-
-    <div id="part3" class="sub-page">
-        <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>顧客統計</h2></div>
-        <button onclick="exportToExcel()" style="width:100%; background:var(--success); color:white; border:none; padding:16px; border-radius:15px; margin-bottom:20px; font-weight:bold;">📊 匯出對帳 Excel</button>
-        <div id="customerList"></div>
-    </div>
+    <div id="part2" class="sub-page"><div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>採購明細</h2></div><div id="allList"></div></div>
+    <div id="part3" class="sub-page"><div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>顧客統計</h2></div><button onclick="exportToExcel()" style="width:100%; background:var(--success); color:white; border:none; padding:16px; border-radius:15px; margin-bottom:20px; font-weight:bold;">📊 匯出對帳 Excel</button><div id="customerList"></div></div>
 
     <div id="part4" class="sub-page">
         <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>預購清單管理</h2></div>
@@ -136,12 +131,10 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const dataRef = db.ref('yuna_v20_data'); 
-        const preRef = db.ref('yuna_v20_preorder'); 
+        const dataRef = db.ref('yuna_v21_data'); 
+        const preRef = db.ref('yuna_v21_preorder'); 
 
-        let rawData = {};
-        let rawPre = {};
-        let activePickerCallback = null;
+        let rawData = {}; let rawPre = {}; let activePickerCallback = null;
 
         function showPage(pageId) {
             document.getElementById('homePage').style.display = (pageId === 'home') ? 'grid' : 'none';
@@ -163,46 +156,42 @@
         }
 
         function openPicker(title, options, callback) {
-            document.getElementById('modalTitle').innerText = title;
-            activePickerCallback = callback;
-            document.getElementById('modalOptions').innerHTML = options.map(opt => `
-                <button class="modal-btn" onclick="handlePick('${opt}')">${opt}</button>
-            `).join('');
+            document.getElementById('modalTitle').innerText = title; activePickerCallback = callback;
+            document.getElementById('modalOptions').innerHTML = options.map(opt => `<button class="modal-btn" onclick="handlePick('${opt}')">${opt}</button>`).join('');
             document.getElementById('selectorModal').style.display = 'flex';
         }
-        
-        function handlePick(val) {
-            if(activePickerCallback) activePickerCallback(val);
-            closeModal();
-        }
+        function handlePick(val) { if(activePickerCallback) activePickerCallback(val); closeModal(); }
+        function closeModal() { document.getElementById('selectorModal').style.display = 'none'; activePickerCallback = null; }
 
-        function closeModal() { 
-            document.getElementById('selectorModal').style.display = 'none'; 
-            activePickerCallback = null;
+        // 修改照片的核心邏輯
+        function triggerImgEdit(refType, id) {
+            const input = document.getElementById('editImgInput');
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const base64 = await new Promise(res => {
+                    const reader = new FileReader();
+                    reader.onload = ev => res(ev.target.result);
+                    reader.readAsDataURL(file);
+                });
+                const ref = (refType === 'buy') ? dataRef : preRef;
+                ref.child(id).update({ img: base64 });
+                input.value = ""; // 清空
+            };
+            input.click();
         }
 
         async function saveData() {
             const file = document.getElementById('pImg').files[0];
             let base64 = "";
-            if(file) {
-                base64 = await new Promise(res => {
-                    const reader = new FileReader();
-                    reader.onload = e => res(e.target.result);
-                    reader.readAsDataURL(file);
-                });
-            }
+            if(file) base64 = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(file); });
             dataRef.push({
-                name: document.getElementById('pName').value || "未命名",
-                priceN: document.getElementById('pPriceN').value || "0",
-                priceTax: document.getElementById('pPriceTax').value || "0",
-                priceSell: document.getElementById('pPriceSell').value || "0",
-                qty: document.getElementById('pQty').value || "1",
-                loc: document.getElementById('pLoc').value || "未填",
-                customer: document.getElementById('pCustomer').value || "未填",
-                buyer: document.getElementById('pBuyer').value || "未選",
+                name: document.getElementById('pName').value || "未命名", priceN: document.getElementById('pPriceN').value || "0",
+                priceTax: document.getElementById('pPriceTax').value || "0", priceSell: document.getElementById('pPriceSell').value || "0",
+                qty: document.getElementById('pQty').value || "1", loc: document.getElementById('pLoc').value || "未填",
+                customer: document.getElementById('pCustomer').value || "未填", buyer: document.getElementById('pBuyer').value || "未選",
                 cardInfo: document.getElementById('pBuyer').value === 'Ray' ? (document.getElementById('pRayCard').value || "") : "",
-                img: base64,
-                time: new Date().toLocaleString()
+                img: base64, time: new Date().toLocaleString()
             });
             ['pName','pPriceN','pPriceTax','pPriceSell','pLoc','pCustomer','pImg'].forEach(id=>document.getElementById(id).value='');
             showPage('home');
@@ -211,21 +200,11 @@
         async function savePreOrder() {
             const file = document.getElementById('preImg').files[0];
             let base64 = "";
-            if(file) {
-                base64 = await new Promise(res => {
-                    const reader = new FileReader();
-                    reader.onload = e => res(e.target.result);
-                    reader.readAsDataURL(file);
-                });
-            }
+            if(file) base64 = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(file); });
             preRef.push({
-                name: document.getElementById('preName').value || "未命名",
-                customer: document.getElementById('preCust').value || "未填",
-                buyPrice: document.getElementById('preBuyPrice').value || "0",
-                sellPrice: document.getElementById('preSellPrice').value || "0",
-                isBought: false,
-                img: base64,
-                time: new Date().toLocaleString()
+                name: document.getElementById('preName').value || "未命名", customer: document.getElementById('preCust').value || "未填",
+                buyPrice: document.getElementById('preBuyPrice').value || "0", sellPrice: document.getElementById('preSellPrice').value || "0",
+                isBought: false, img: base64, time: new Date().toLocaleString()
             });
             ['preName','preCust','preBuyPrice','preSellPrice','preImg'].forEach(id=>document.getElementById(id).value='');
         }
@@ -234,31 +213,23 @@
         preRef.on('value', snap => { rawPre = snap.val() || {}; renderLists(); });
 
         function editInList(id, field, current) {
-            if(field === 'buyer') {
-                openPicker("選擇買手", ['Ray', 'Nana', 'Cupid'], (val) => {
-                    let up = {buyer: val}; if(val !== 'Ray') up.cardInfo = "";
-                    dataRef.child(id).update(up);
-                });
-            } else if(field === 'cardInfo') {
-                openPicker("選擇卡片", ['na爸卡', 'ray卡'], (val) => {
-                    dataRef.child(id).update({cardInfo: val});
-                });
-            } else {
-                let v = prompt(`修改 ${field}:`, current);
-                if(v !== null) { let up = {}; up[field] = v; dataRef.child(id).update(up); }
-            }
+            if(field === 'buyer') { openPicker("選擇買手", ['Ray', 'Nana', 'Cupid'], (val) => { let up = {buyer: val}; if(val !== 'Ray') up.cardInfo = ""; dataRef.child(id).update(up); }); }
+            else if(field === 'cardInfo') { openPicker("選擇卡片", ['na爸卡', 'ray卡'], (val) => { dataRef.child(id).update({cardInfo: val}); }); }
+            else { let v = prompt(`修改 ${field}:`, current); if(v !== null) { let up = {}; up[field] = v; dataRef.child(id).update(up); } }
         }
 
         function editPreOrder(id, field, current) {
-            let v = prompt(`修改預購 ${field}:`, current);
-            if(v !== null) { let up = {}; up[field] = v; preRef.child(id).update(up); }
+            let v = prompt(`修改預購 ${field}:`, current); if(v !== null) { let up = {}; up[field] = v; preRef.child(id).update(up); }
         }
 
         function renderLists() {
             const buyArr = Object.entries(rawData).map(([id, val]) => ({ id, ...val })).reverse();
             document.getElementById('allList').innerHTML = buyArr.map(i => `
                 <div class="item-row">
-                    <img src="${i.img || ''}" class="item-img" onclick="if(this.src) window.open(this.src)">
+                    <div onclick="triggerImgEdit('buy', '${i.id}')">
+                        <img src="${i.img || ''}" class="item-img">
+                        <span class="img-tip">點擊換圖</span>
+                    </div>
                     <div class="item-info">
                         <div style="font-weight:bold"><span class="editable-field" onclick="editInList('${i.id}','name','${i.name}')">${i.name}</span></div>
                         <div class="price-grid">
@@ -280,7 +251,10 @@
             const preArr = Object.entries(rawPre).map(([id, val]) => ({ id, ...val })).reverse();
             document.getElementById('preOrderList').innerHTML = preArr.map(i => `
                 <div class="item-row" style="border-left: 5px solid ${i.isBought ? '#2ecc71' : '#ccc'}">
-                    <img src="${i.img || ''}" class="item-img">
+                    <div onclick="triggerImgEdit('pre', '${i.id}')">
+                        <img src="${i.img || ''}" class="item-img">
+                        <span class="img-tip">點擊換圖</span>
+                    </div>
                     <div class="item-info">
                         <div style="font-weight:bold"><span class="editable-field" onclick="editPreOrder('${i.id}','name','${i.name}')">${i.name}</span></div>
                         <div class="price-grid">
@@ -295,7 +269,6 @@
                     <button onclick="if(confirm('刪除？')) preRef.child('${i.id}').remove()" style="border:none;background:none;color:#ccc">✕</button>
                 </div>
             `).join('');
-
             renderSummary(buyArr, preArr);
         }
 
@@ -303,21 +276,16 @@
             const groups = {};
             buyArr.forEach(i => { if(!groups[i.customer]) groups[i.customer] = { buy: [], pre: [] }; groups[i.customer].buy.push(i); });
             preArr.forEach(i => { if(!groups[i.customer]) groups[i.customer] = { buy: [], pre: [] }; groups[i.customer].pre.push(i); });
-
             document.getElementById('customerList').innerHTML = Object.keys(groups).map(c => {
                 const bTotal = groups[c].buy.reduce((s, n) => s + (parseFloat(n.priceSell)*(parseInt(n.qty)||1)), 0);
                 const pTotal = groups[c].pre.reduce((s, n) => s + (n.isBought ? parseFloat(n.sellPrice) : 0), 0);
-                return `
-                <div class="card">
-                    <div style="font-weight:bold; display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding-bottom:10px;">
-                        <span>👤 ${c}</span><span style="color:var(--primary)">總應收 ¥${bTotal + pTotal}</span>
-                    </div>
+                return `<div class="card">
+                    <div style="font-weight:bold; display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding-bottom:10px;"><span>👤 ${c}</span><span style="color:var(--primary)">總應收 ¥${bTotal + pTotal}</span></div>
                     <div style="padding-top:10px; font-size:12px; line-height:1.6; color:#666;">
                         ${groups[c].buy.map(p => `• ${p.name} (x${p.qty}) - ¥${p.priceSell}`).join('<br>')}
                         ${groups[c].pre.map(p => {
                             const statusLabel = p.isBought ? '<span style="color:#28a745; font-weight:bold;">[已買]</span>' : '<span style="color:#dc3545;">[缺貨]</span>';
-                            const priceDisplay = p.isBought ? `¥${p.sellPrice}` : '<strike>¥' + p.sellPrice + '</strike> (不計費)';
-                            return `• ${statusLabel} ${p.name} - ${priceDisplay}`;
+                            return `• ${statusLabel} ${p.name} - ${p.isBought ? '¥'+p.sellPrice : '<strike>¥'+p.sellPrice+'</strike>'}`;
                         }).join('<br>')}
                     </div>
                 </div>`;
