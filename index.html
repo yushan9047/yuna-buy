@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yuna 代購管理系統 v18</title>
+    <title>Yuna 代購管理系統 v19</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -136,11 +136,12 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const dataRef = db.ref('yuna_v18_data'); 
-        const preRef = db.ref('yuna_v18_preorder'); 
+        const dataRef = db.ref('yuna_v19_data'); 
+        const preRef = db.ref('yuna_v19_preorder'); 
 
         let rawData = {};
         let rawPre = {};
+        let activePickerCallback = null;
 
         function showPage(pageId) {
             document.getElementById('homePage').style.display = (pageId === 'home') ? 'grid' : 'none';
@@ -161,15 +162,25 @@
             btn.classList.add('active');
         }
 
+        // 核心選單開啟函式
         function openPicker(title, options, callback) {
             document.getElementById('modalTitle').innerText = title;
+            activePickerCallback = callback;
             document.getElementById('modalOptions').innerHTML = options.map(opt => `
-                <button class="modal-btn" onclick="executePick('${opt}', ${callback})">${opt}</button>
+                <button class="modal-btn" onclick="handlePick('${opt}')">${opt}</button>
             `).join('');
             document.getElementById('selectorModal').style.display = 'flex';
         }
-        function executePick(val, callback) { callback(val); closeModal(); }
-        function closeModal() { document.getElementById('selectorModal').style.display = 'none'; }
+        
+        function handlePick(val) {
+            if(activePickerCallback) activePickerCallback(val);
+            closeModal();
+        }
+
+        function closeModal() { 
+            document.getElementById('selectorModal').style.display = 'none'; 
+            activePickerCallback = null;
+        }
 
         async function saveData() {
             const file = document.getElementById('pImg').files[0];
@@ -291,9 +302,7 @@
 
         function renderSummary(buyArr, preArr) {
             const groups = {};
-            // 處理現場採購
             buyArr.forEach(i => { if(!groups[i.customer]) groups[i.customer] = { buy: [], pre: [] }; groups[i.customer].buy.push(i); });
-            // 處理預購商品 (包含所有預購，計算時僅算已買到)
             preArr.forEach(i => { if(!groups[i.customer]) groups[i.customer] = { buy: [], pre: [] }; groups[i.customer].pre.push(i); });
 
             document.getElementById('customerList').innerHTML = Object.keys(groups).map(c => {
