@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yuna 代購管理系統 v30</title>
+    <title>Yuna 代購管理系統 v31 - 清空功能版</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -35,7 +35,7 @@
         .header-bar h2 { margin: 0; font-size: 20px; font-weight: 700; }
         .back-btn { background: white; border: 1.5px solid #eee; padding: 10px 20px; border-radius: 50px; font-size: 14px; font-weight: bold; cursor: pointer; }
 
-        /* --- 首頁按鈕 (維持大圓角風格) --- */
+        /* --- 首頁按鈕 --- */
         #homePage { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 20px; align-content: center; }
         .main-btn { 
             aspect-ratio: 1/1; border-radius: 35px; border: none; font-size: 18px; font-weight: bold; color: white; 
@@ -48,7 +48,7 @@
         .btn-pre { background: #2a9d8f; }
         .btn-cust { background: #2b2d42; grid-column: span 2; aspect-ratio: auto; height: 80px; }
 
-        /* --- 大圓角輸入框 (重點修正) --- */
+        /* --- 大圓角輸入框 --- */
         .card { background: var(--card-bg); padding: 25px; border-radius: 30px; box-shadow: var(--shadow); margin-bottom: 20px; }
         .form-group { margin-bottom: 20px; }
         label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 10px; margin-left: 15px; color: var(--text-sub); }
@@ -148,7 +148,9 @@
     
     <div id="part3" class="sub-page">
         <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>對帳統計</h2></div>
-        <button onclick="exportToExcel()" class="submit-btn" style="background:#2b2d42; margin-bottom: 20px;">📊 匯出對帳 Excel</button>
+        <button onclick="exportToExcel()" class="submit-btn" style="background:#2b2d42; margin-bottom: 10px;">📊 匯出對帳 Excel</button>
+        <button onclick="clearCurrentRecords()" class="submit-btn" style="background:#8d99ae; margin-bottom: 25px; font-size: 14px; padding: 15px;">🗑️ 清空所有紀錄 (新航次開始)</button>
+        
         <div id="customerList"></div>
     </div>
 
@@ -170,7 +172,7 @@
     </div>
 
     <script>
-        // --- 邏輯完全保持您的 v25 設定 ---
+        // --- 核心配置 ---
         const firebaseConfig = {
             apiKey: "AIzaSyBxy3g2MS18oJdE2v-JAZ9VWXZwZQ9W4yM",
             databaseURL: "https://yunabuy-cf20c-default-rtdb.firebaseio.com/",
@@ -355,6 +357,27 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "對帳單");
             XLSX.writeFile(wb, `Yuna對帳單_${new Date().toLocaleDateString()}.xlsx`);
+        }
+
+        // --- 新增：清空所有數據邏輯 ---
+        async function clearCurrentRecords() {
+            const confirm1 = confirm("⚠️ 確定要【清空所有數據】嗎？\n這將會清除目前的採購清單與預購內容！");
+            if (!confirm1) return;
+
+            const confirm2 = confirm("🚨 再次確認：數據刪除後無法復原！\n請確定你已經完成匯出對帳。");
+            if (!confirm2) return;
+
+            try {
+                // 清除 Firebase 兩個節點
+                await Promise.all([
+                    dataRef.remove(),
+                    preRef.remove()
+                ]);
+                alert("✅ 資料已歸零，可開始新一輪採購！");
+                showPage('home');
+            } catch (err) {
+                alert("❌ 清空失敗，請檢查網路：" + err);
+            }
         }
     </script>
 </body>
