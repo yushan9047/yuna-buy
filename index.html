@@ -98,6 +98,7 @@
         <button class="main-btn btn-cust" onclick="showPage('part3')">👥 顧客統計對帳</button>
     </div>
 
+    <!-- 現場採購 -->
     <div id="part1" class="sub-page">
         <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>新增採購</h2></div>
         <div class="card">
@@ -108,6 +109,27 @@
                 <div class="form-group" style="flex:1"><label>💰 含稅成本</label><input type="number" id="pPriceTax" placeholder="0"></div>
             </div>
             <div class="form-group"><label>💎 販售價格</label><input type="number" id="pPriceSell" placeholder="0"></div>
+
+            <!-- 現場採購退稅設定 -->
+            <div class="form-group">
+                <label>🏷️ 退稅設定</label>
+                <div class="btn-group">
+                    <button id="buyTaxBtnYes" class="btn-opt" onclick="toggleBuyTax(true)">有退稅</button>
+                    <button id="buyTaxBtnNo" class="btn-opt active" onclick="toggleBuyTax(false)">無退稅</button>
+                </div>
+                <input type="hidden" id="buyIsTaxFree" value="false">
+            </div>
+            <div style="display:flex; gap:12px;">
+                <div class="form-group" id="buyTaxRateGroup" style="flex:1; display:none;">
+                    <label>％ 稅率</label>
+                    <input type="number" id="buyTaxRate" value="10">
+                </div>
+                <div class="form-group" id="buyTaxFreeGroup" style="flex:1; display:none;">
+                    <label>💸 退稅價</label>
+                    <input type="number" id="buyTaxFreePrice" placeholder="0">
+                </div>
+            </div>
+
             <div style="display:flex; gap:12px;">
                 <div class="form-group" style="flex:1"><label>🔢 數量</label><input type="number" id="pQty" value="1"></div>
                 <div class="form-group" style="flex:1"><label>📍 地點</label><input type="text" id="pLoc" placeholder="地點"></div>
@@ -134,11 +156,13 @@
         </div>
     </div>
 
+    <!-- 採購明細 -->
     <div id="part2" class="sub-page">
         <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>採購明細</h2></div>
         <div id="allList"></div>
     </div>
     
+    <!-- 對帳統計 -->
     <div id="part3" class="sub-page">
         <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>對帳統計</h2></div>
         <button onclick="exportToExcel()" class="submit-btn" style="background:#2b2d42; margin-bottom: 10px;">📊 匯出對帳 Excel</button>
@@ -146,6 +170,7 @@
         <div id="customerList"></div>
     </div>
 
+    <!-- 預購清單 -->
     <div id="part4" class="sub-page">
         <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>預購清單</h2></div>
         <div class="card">
@@ -164,13 +189,19 @@
             </div>
 
             <div style="display:flex; gap:12px;">
-                <div class="form-group" style="flex:1.5"><label>💴 含稅價(標價)</label><input type="number" id="preTaxPrice" placeholder="0" oninput="calcTaxPrice()"></div>
-                <!-- 加上 id="taxRateGroup" 方便顯示/隱藏 -->
-                <div class="form-group" id="taxRateGroup" style="flex:1"><label>％ 稅率</label><input type="number" id="preTaxRate" value="10" oninput="calcTaxPrice()"></div>
+                <div class="form-group" style="flex:1.5">
+                    <label>💴 含稅價(標價)</label>
+                    <input type="number" id="preTaxPrice" placeholder="0">
+                </div>
+                <div class="form-group" id="taxRateGroup" style="flex:1;">
+                    <label>％ 稅率</label>
+                    <input type="number" id="preTaxRate" value="10">
+                </div>
             </div>
 
-            <div id="taxFreeResult" style="display:none; background:#f0f9f8; padding:15px; border-radius:20px; margin-bottom:20px;">
-                <label style="color:var(--green); margin-left:0;">✨ 自動計算退稅價：¥ <span id="preTaxFreeVal">0</span></label>
+            <div class="form-group" id="preTaxFreeGroup" style="display:none;">
+                <label>💸 退稅價</label>
+                <input type="number" id="preTaxFreePrice" placeholder="0">
             </div>
 
             <div style="display:flex; gap:12px;">
@@ -205,31 +236,30 @@
             window.scrollTo(0,0);
         }
 
-        // --- 預購專用邏輯 ---
+        // --- 預購專用邏輯（退稅切換＋顯示欄位） ---
         function togglePreTax(isTaxFree) {
             document.getElementById('preIsTaxFree').value = isTaxFree;
             document.getElementById('taxBtnYes').classList.toggle('active', isTaxFree);
             document.getElementById('taxBtnNo').classList.toggle('active', !isTaxFree);
-            document.getElementById('taxFreeResult').style.display = isTaxFree ? 'block' : 'none';
 
-            // 只有有退稅時顯示稅率欄位
             const taxRateGroup = document.getElementById('taxRateGroup');
-            if (taxRateGroup) {
-                taxRateGroup.style.display = isTaxFree ? 'block' : 'none';
-            }
+            const preTaxFreeGroup = document.getElementById('preTaxFreeGroup');
 
-            if (isTaxFree) {
-                calcTaxPrice();
-            }
+            if (taxRateGroup) taxRateGroup.style.display = isTaxFree ? 'block' : 'none';
+            if (preTaxFreeGroup) preTaxFreeGroup.style.display = isTaxFree ? 'block' : 'none';
         }
 
-        function calcTaxPrice() {
-            const price = parseFloat(document.getElementById('preTaxPrice').value) || 0;
-            const rate = parseFloat(document.getElementById('preTaxRate').value) || 10;
-            // 公式：含稅價 / (1 + 稅率)
-            const taxFree = Math.round(price / (1 + (rate/100)));
-            document.getElementById('preTaxFreeVal').innerText = taxFree;
-            return taxFree;
+        // --- 現場採購退稅切換 ---
+        function toggleBuyTax(isTaxFree) {
+            document.getElementById('buyIsTaxFree').value = isTaxFree;
+            document.getElementById('buyTaxBtnYes').classList.toggle('active', isTaxFree);
+            document.getElementById('buyTaxBtnNo').classList.toggle('active', !isTaxFree);
+
+            const buyTaxRateGroup = document.getElementById('buyTaxRateGroup');
+            const buyTaxFreeGroup = document.getElementById('buyTaxFreeGroup');
+
+            if (buyTaxRateGroup) buyTaxRateGroup.style.display = isTaxFree ? 'block' : 'none';
+            if (buyTaxFreeGroup) buyTaxFreeGroup.style.display = isTaxFree ? 'block' : 'none';
         }
 
         // --- 買手與圖片編輯 (維持原樣) ---
@@ -271,46 +301,71 @@
             input.click();
         }
 
-        // --- 儲存資料 ---
+        // --- 儲存現場採購資料 ---
         async function saveData() {
             const file = document.getElementById('pImg').files[0];
             let base64 = "";
             if(file) base64 = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(file); });
+
+            const isTaxFreeBuy = document.getElementById('buyIsTaxFree').value === 'true';
+            const buyTaxRate = document.getElementById('buyTaxRate').value || "10";
+            const buyTaxFreePrice = isTaxFreeBuy ? (document.getElementById('buyTaxFreePrice').value || "0") : "0";
+
             dataRef.push({
-                name: document.getElementById('pName').value || "未命名", priceN: document.getElementById('pPriceN').value || "0",
-                priceTax: document.getElementById('pPriceTax').value || "0", priceSell: document.getElementById('pPriceSell').value || "0",
-                qty: document.getElementById('pQty').value || "1", loc: document.getElementById('pLoc').value || "未填",
-                customer: document.getElementById('pCustomer').value || "未填", buyer: document.getElementById('pBuyer').value || "未選",
+                name: document.getElementById('pName').value || "未命名", 
+                priceN: document.getElementById('pPriceN').value || "0",
+                priceTax: document.getElementById('pPriceTax').value || "0", 
+                priceSell: document.getElementById('pPriceSell').value || "0",
+                qty: document.getElementById('pQty').value || "1", 
+                loc: document.getElementById('pLoc').value || "未填",
+                customer: document.getElementById('pCustomer').value || "未填", 
+                buyer: document.getElementById('pBuyer').value || "未選",
                 cardInfo: document.getElementById('pBuyer').value === 'Ray' ? (document.getElementById('pRayCard').value || "") : "",
-                img: base64, time: new Date().toLocaleString()
+                isTaxFree: isTaxFreeBuy,
+                taxRate: buyTaxRate,
+                taxFreePrice: buyTaxFreePrice,
+                img: base64, 
+                time: new Date().toLocaleString()
             });
-            ['pName','pPriceN','pPriceTax','pPriceSell','pLoc','pCustomer','pImg','pQty'].forEach(id=> {
-                let el = document.getElementById(id); if(el) el.value = (id === 'pQty' ? '1' : '');
+            ['pName','pPriceN','pPriceTax','pPriceSell','pLoc','pCustomer','pImg','pQty','buyTaxRate','buyTaxFreePrice'].forEach(id=> {
+                let el = document.getElementById(id); 
+                if(el) el.value = (id === 'pQty' ? '1' : '');
             });
+
+            // 重置現場退稅切換
+            toggleBuyTax(false);
+
             showPage('home');
         }
 
+        // --- 儲存預購資料 ---
         async function savePreOrder() {
             const file = document.getElementById('preImg').files[0];
             let base64 = "";
             if(file) base64 = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(file); });
             
             const isTaxFree = document.getElementById('preIsTaxFree').value === 'true';
-            const taxFreeVal = isTaxFree ? calcTaxPrice() : 0;
+            const taxRateVal = document.getElementById('preTaxRate').value || "10";
+            const taxFreeVal = isTaxFree ? (document.getElementById('preTaxFreePrice').value || "0") : "0";
 
             preRef.push({
-                name: document.getElementById('preName').value || "未命名", customer: document.getElementById('preCust').value || "未填",
+                name: document.getElementById('preName').value || "未命名", 
+                customer: document.getElementById('preCust').value || "未填",
                 qty: document.getElementById('preQty').value || "1",
                 sellPrice: document.getElementById('preSellPrice').value || "0",
                 isTaxFree: isTaxFree,
-                taxRate: document.getElementById('preTaxRate').value || "10",
+                taxRate: taxRateVal,
                 taxIncludedPrice: document.getElementById('preTaxPrice').value || "0",
                 taxFreePrice: taxFreeVal,
-                isBought: false, img: base64, time: new Date().toLocaleString()
+                isBought: false, 
+                img: base64, 
+                time: new Date().toLocaleString()
             });
-            ['preName','preCust','preTaxPrice','preSellPrice','preImg','preQty'].forEach(id=> {
-                let el = document.getElementById(id); if(el) el.value = (id === 'preQty' ? '1' : '');
+            ['preName','preCust','preTaxPrice','preSellPrice','preImg','preQty','preTaxRate','preTaxFreePrice'].forEach(id=> {
+                let el = document.getElementById(id); 
+                if(el) el.value = (id === 'preQty' ? '1' : '');
             });
+            // 重置退稅切換
             togglePreTax(false);
         }
 
@@ -319,32 +374,36 @@
         preRef.on('value', snap => { rawPre = snap.val() || {}; renderLists(); });
 
         function editInList(id, field, current) {
-            if(field === 'buyer') { openPicker("選擇買手", ['Ray', 'Nana', 'Cupid'], (val) => { let up = {buyer: val}; if(val !== 'Ray') up.cardInfo = ""; dataRef.child(id).update(up); }); }
-            else if(field === 'cardInfo') { openPicker("選擇卡片", ['na爸卡', 'ray卡'], (val) => { dataRef.child(id).update({cardInfo: val}); }); }
-            else { let v = prompt(`修改 ${field}:`, current); if(v !== null) { let up = {}; up[field] = v; dataRef.child(id).update(up); } }
+            if(field === 'buyer') { 
+                openPicker("選擇買手", ['Ray', 'Nana', 'Cupid'], (val) => { 
+                    let up = {buyer: val}; 
+                    if(val !== 'Ray') up.cardInfo = ""; 
+                    dataRef.child(id).update(up); 
+                }); 
+            }
+            else if(field === 'cardInfo') { 
+                openPicker("選擇卡片", ['na爸卡', 'ray卡'], (val) => { dataRef.child(id).update({cardInfo: val}); }); 
+            }
+            else { 
+                let v = prompt(`修改 ${field}:`, current); 
+                if(v !== null) { 
+                    let up = {}; 
+                    up[field] = v; 
+                    dataRef.child(id).update(up); 
+                } 
+            }
         }
 
-        // --- 預購清單可編輯 ---
+        // --- 預購清單可編輯（純手動，不再自動計算） ---
         function editPreInList(id, field, current) {
             let v = prompt(`修改 ${field}:`, current);
             if (v === null) return;
-
             const up = {};
             up[field] = v;
-
-            // 若有退稅且修改了含稅價或稅率，需重新計算退稅價
-            const item = rawPre[id];
-            if (item && item.isTaxFree && (field === 'taxIncludedPrice' || field === 'taxRate')) {
-                const price = field === 'taxIncludedPrice' ? (parseFloat(v) || 0) : (parseFloat(item.taxIncludedPrice) || 0);
-                const rate  = field === 'taxRate'          ? (parseFloat(v) || 0) : (parseFloat(item.taxRate) || 0);
-                const taxFree = Math.round(price / (1 + rate / 100));
-                up.taxFreePrice = taxFree;
-            }
-
             preRef.child(id).update(up);
         }
 
-        // --- 清單項目有/無退稅切換 ---
+        // --- 清單項目有/無退稅切換（預購） ---
         function togglePreTaxItem(id) {
             const item = rawPre[id];
             if (!item) return;
@@ -353,33 +412,58 @@
             const up = { isTaxFree: newIsTaxFree };
 
             if (newIsTaxFree) {
-                // 切換成有退稅：用現有含稅價與稅率計算退稅價
-                const price = parseFloat(item.taxIncludedPrice) || 0;
-                const rate = parseFloat(item.taxRate) || 10;
-                up.taxFreePrice = Math.round(price / (1 + rate / 100));
-            } else {
-                // 切換成無退稅：退稅價歸 0
-                up.taxFreePrice = 0;
+                if (!item.taxRate) up.taxRate = "10";
+                if (!item.taxFreePrice) up.taxFreePrice = "0";
             }
-
             preRef.child(id).update(up);
+        }
+
+        // --- 清單項目有/無退稅切換（現場） ---
+        function toggleBuyTaxItem(id) {
+            const item = rawData[id];
+            if (!item) return;
+
+            const newIsTaxFree = !item.isTaxFree;
+            const up = { isTaxFree: newIsTaxFree };
+
+            if (newIsTaxFree) {
+                if (!item.taxRate) up.taxRate = "10";
+                if (!item.taxFreePrice) up.taxFreePrice = "0";
+            }
+            dataRef.child(id).update(up);
         }
 
         function renderLists() {
             const buyArr = Object.entries(rawData).map(([id, val]) => ({ id, ...val })).reverse();
             document.getElementById('allList').innerHTML = buyArr.map(i => `
                 <div class="item-row">
-                    <div onclick="triggerImgEdit('buy', '${i.id}')"><img src="${i.img || ''}" class="item-img"><span style="font-size:9px;display:block;text-align:center;color:#ccc">換圖</span></div>
+                    <div onclick="triggerImgEdit('buy', '${i.id}')">
+                        <img src="${i.img || ''}" class="item-img">
+                        <span style="font-size:9px;display:block;text-align:center;color:#ccc">換圖</span>
+                    </div>
                     <div class="item-info">
-                        <div style="font-weight:bold"><span class="editable-field" onclick="editInList('${i.id}','name','${i.name}')">${i.name}</span></div>
+                        <div style="font-weight:bold">
+                            <span class="editable-field" onclick="editInList('${i.id}','name','${i.name}')">${i.name}</span>
+                        </div>
                         <div class="price-grid">
-                            <div class="price-tag"><span class="price-label">含稅成本</span>¥ <span class="editable-field" onclick="editInList('${i.id}','priceTax','${i.priceTax}')">${i.priceTax}</span></div>
-                            <div class="price-tag" style="background:#fff1f2;"><span class="price-label">💰 售價</span>¥ <span class="editable-field" onclick="editInList('${i.id}','priceSell','${i.priceSell}')">${i.priceSell}</span></div>
+                            <div class="price-tag">
+                                <span class="price-label">含稅成本</span>¥ 
+                                <span class="editable-field" onclick="editInList('${i.id}','priceTax','${i.priceTax}')">${i.priceTax}</span>
+                            </div>
+                            <div class="price-tag" style="background:#fff1f2;">
+                                <span class="price-label">💰 售價</span>¥ 
+                                <span class="editable-field" onclick="editInList('${i.id}','priceSell','${i.priceSell}')">${i.priceSell}</span>
+                            </div>
                         </div>
                         <div class="tag-row">
                             <span class="tag tag-active" onclick="editInList('${i.id}','qty','${i.qty}')">x ${i.qty || 1}</span>
                             <span class="tag tag-active" onclick="editInList('${i.id}','customer','${i.customer}')">👤 ${i.customer}</span>
                             <span class="tag" onclick="editInList('${i.id}','buyer','${i.buyer}')">🧤 ${i.buyer}</span>
+                            ${
+                                i.isTaxFree
+                                ? `<span class="tag" style="background:#e9f5f3; color:#2a9d8f;" onclick="editInList('${i.id}','taxRate','${i.taxRate || ''}')">✨ 退稅價 ¥${i.taxFreePrice || 0} (${i.taxRate || ''}%)</span>`
+                                : `<span class="tag" onclick="toggleBuyTaxItem('${i.id}')">無退稅（點我開啟）</span>`
+                            }
                         </div>
                     </div>
                     <button onclick="if(confirm('刪除？')) dataRef.child('${i.id}').remove()" style="border:none;background:none;color:#ddd;">✕</button>
@@ -409,7 +493,7 @@
                             <span class="tag tag-active" onclick="editPreInList('${i.id}','customer','${i.customer}')">👤 ${i.customer}</span>
                             ${
                                 i.isTaxFree
-                                ? `<span class="tag" style="background:#e9f5f3; color:#2a9d8f;" onclick="editPreInList('${i.id}','taxRate','${i.taxRate}')">✨ 退稅價 ¥${i.taxFreePrice} (${i.taxRate}%)</span>`
+                                ? `<span class="tag" style="background:#e9f5f3; color:#2a9d8f;" onclick="editPreInList('${i.id}','taxRate','${i.taxRate || ''}')">✨ 退稅價 ¥${i.taxFreePrice || 0} (${i.taxRate || ''}%)</span>`
                                 : `<span class="tag" onclick="togglePreTaxItem('${i.id}')">無退稅（點我開啟）</span>`
                             }
                             <span class="tag ${i.isBought ? 'tag-active' : ''}" onclick="preRef.child('${i.id}').update({isBought: ${!i.isBought}})">${i.isBought ? '● 已買到' : '○ 缺貨中'}</span>
@@ -439,8 +523,24 @@
         }
 
         function exportToExcel() {
-            const d = Object.values(rawData).map(i => ({ "類型": "現場", "顧客": i.customer, "品名": i.name, "數量": i.qty, "售價": i.priceSell, "含稅成本": i.priceTax }));
-            const p = Object.values(rawPre).map(i => ({ "類型": "預購", "顧客": i.customer, "品名": i.name, "數量": i.qty, "售價": i.sellPrice, "含稅標價": i.taxIncludedPrice, "退稅價": i.isTaxFree ? i.taxFreePrice : "無", "狀態": i.isBought ? "已買" : "缺" }));
+            const d = Object.values(rawData).map(i => ({ 
+                "類型": "現場", 
+                "顧客": i.customer, 
+                "品名": i.name, 
+                "數量": i.qty, 
+                "售價": i.priceSell, 
+                "含稅成本": i.priceTax 
+            }));
+            const p = Object.values(rawPre).map(i => ({ 
+                "類型": "預購", 
+                "顧客": i.customer, 
+                "品名": i.name, 
+                "數量": i.qty, 
+                "售價": i.sellPrice, 
+                "含稅標價": i.taxIncludedPrice, 
+                "退稅價": i.isTaxFree ? i.taxFreePrice : "無", 
+                "狀態": i.isBought ? "已買" : "缺" 
+            }));
             const ws = XLSX.utils.json_to_sheet([...d, ...p]);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "對帳單");
