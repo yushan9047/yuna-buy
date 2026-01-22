@@ -337,7 +337,7 @@
 
             <div style="display:flex; gap:12px;">
                 <div class="form-group" style="flex:1.5">
-                    <label>💴 含稅價(標價) (¥)</label>
+                    <label>💴 含稅價(¥)</label>
                     <input type="number" id="preTaxPrice" placeholder="0">
                 </div>
                 <div class="form-group" id="taxRateGroup" style="flex:1; display:none;">
@@ -729,7 +729,7 @@
                         <div id="pre-detail-${i.id}" class="item-detail">
                             <div class="price-grid">
                                 <div class="price-tag">
-                                    <span class="price-label">含稅標價 (¥)</span>
+                                    <span class="price-label">含稅價(¥)</span>
                                     ¥ <span class="editable-field" onclick="editPreInList('${i.id}','taxIncludedPrice','${i.taxIncludedPrice}')">${i.taxIncludedPrice}</span>
                                 </div>
                                 <div class="price-tag" style="background:var(--soft);border:1px solid var(--soft-border);">
@@ -865,3 +865,4 @@
     </script>
 </body>
 </html>
+
