@@ -345,7 +345,7 @@
                 img: base64, 
                 time: new Date().toLocaleString()
             });
-            ['pName','pPriceTax','pPriceSell','pLoc','pCustomer','pImg','pQty','buyTaxRate','buyTaxFreePrice'].forEach(id=> {
+            ['pName','pPriceTax','pPriceSell','pLoc','pCustomer','pImg','pQty','buyTaxRate','buyTaxFreePrice','pRayCard'].forEach(id=> {
                 let el = document.getElementById(id); 
                 if(el) el.value = (id === 'pQty' ? '1' : '');
             });
@@ -433,7 +433,6 @@
                 if (!item.taxRate) up.taxRate = "10";
                 if (!item.taxFreePrice) up.taxFreePrice = "0";
             }
-            // 若要關閉時順便清空，也可以在這裡補上 up.taxRate / up.taxFreePrice
             preRef.child(id).update(up);
         }
 
@@ -478,6 +477,13 @@
                             <span class="tag tag-active" onclick="editInList('${i.id}','qty','${i.qty}')">x ${i.qty || 1}</span>
                             <span class="tag tag-active" onclick="editInList('${i.id}','customer','${i.customer}')">👤 ${i.customer}</span>
                             <span class="tag" onclick="editInList('${i.id}','buyer','${i.buyer}')">🧤 ${i.buyer}</span>
+                            ${
+                                i.buyer === 'Ray'
+                                ? `<span class="tag" onclick="editInList('${i.id}','cardInfo','${i.cardInfo || ''}')">
+                                        💳 ${i.cardInfo || '選擇卡片'}
+                                   </span>`
+                                : ''
+                            }
                             ${
                                 i.isTaxFree
                                 ? `
