@@ -10,13 +10,18 @@
     <style>
         /* --- 核心風格定義 --- */
         :root { 
-            --primary: #e63946; 
+            /* 原本紅色 primary 改成更有質感的霧藍灰 */
+            --primary: #3D5A80; 
             --bg: #fffafb; 
             --card-bg: #ffffff; 
-            --text-main: #2b2d42; 
-            --text-sub: #8d99ae; 
+            --text-main: #1f2937; 
+            --text-sub: #6b7280; 
             --shadow: 0 8px 30px rgba(0,0,0,0.04);
             --green: #2a9d8f;
+
+            /* 新增：淡藍點綴（取代粉紅系） */
+            --soft: #eef4ff;
+            --soft-border: #dbeafe;
         }
         
         body { 
@@ -41,7 +46,10 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.08); transition: 0.2s;
         }
         .main-btn:active { transform: scale(0.95); }
-        .btn-add { background: #e63946; grid-column: span 2; aspect-ratio: auto; height: 110px; font-size: 22px; }
+
+        /* 原本新增按鈕固定紅色 → 改跟主色一致 */
+        .btn-add { background: var(--primary); grid-column: span 2; aspect-ratio: auto; height: 110px; font-size: 22px; }
+
         .btn-list { background: #457b9d; }
         .btn-pre { background: #2a9d8f; }
         .btn-cust { background: #2b2d42; grid-column: span 2; aspect-ratio: auto; height: 80px; }
@@ -54,12 +62,13 @@
             box-sizing: border-box; font-size: 16px; background: #ffffff; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: all 0.3s ease;
         }
-        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 5px 20px rgba(230,57,70,0.1); }
+        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 5px 20px rgba(61,90,128,0.12); }
 
         .btn-group { display: flex; gap: 10px; }
         .btn-opt { flex: 1; padding: 14px; border: 1.5px solid #eee; border-radius: 50px; background: white; font-weight: bold; color: #555; cursor: pointer; }
-        .btn-opt.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 5px 15px rgba(230,57,70,0.2); }
-        .submit-btn { width: 100%; padding: 20px; background: var(--primary); color: white; border: none; border-radius: 50px; font-size: 18px; font-weight: bold; margin-top: 15px; cursor: pointer; box-shadow: 0 10px 20px rgba(230,57,70,0.2); }
+        .btn-opt.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 5px 15px rgba(61,90,128,0.20); }
+
+        .submit-btn { width: 100%; padding: 20px; background: var(--primary); color: white; border: none; border-radius: 50px; font-size: 18px; font-weight: bold; margin-top: 15px; cursor: pointer; box-shadow: 0 10px 20px rgba(61,90,128,0.22); }
 
         /* --- 列表排版：卡片 + 主資訊/折疊詳情 --- */
         .item-row {
@@ -104,12 +113,14 @@
             margin-top: 6px;
             line-height: 1.5;
         }
+
         .item-actions {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
             gap: 6px;
         }
+
         .item-del {
             border: none;
             background: #fafafa;
@@ -131,6 +142,7 @@
             padding: 2px 4px;
         }
 
+        /* 可編輯文字：改為主色（不再紅） */
         .editable-field { border-bottom: 1px dashed var(--primary); cursor: pointer; color: var(--primary); font-weight: 800; }
 
         .price-grid {
@@ -164,7 +176,10 @@
             cursor: pointer;
             border: 1px solid #f0f0f0;
         }
-        .chip-strong { background: #fff1f2; color: var(--primary); border: 1px solid #ffe4e6; }
+
+        /* 原本粉紅強調 → 改成淡藍系 */
+        .chip-strong { background: var(--soft); color: var(--primary); border: 1px solid var(--soft-border); }
+
         .chip-green { background:#e9f5f3; color:#2a9d8f; border:1px solid #d8efe9; }
 
         .tax-row {
@@ -190,7 +205,7 @@
         .modal-content { background:white; padding:30px; border-radius:35px 35px 0 0; width:100%; max-height: 80vh; overflow-y: auto; }
         .modal-btn { display:block; width:100%; padding:18px; margin:10px 0; border:1px solid #f0f0f0; border-radius:50px; font-size:16px; font-weight:bold; background:#fff; text-align: center; cursor: pointer; }
 
-        /* 對帳統計小圖樣式（保留） */
+        /* 對帳統計小圖樣式 */
         .summary-list { margin-top: 5px; }
         .summary-item { display:flex; gap:10px; margin-bottom:8px; align-items:center; }
         .summary-img { width:46px; height:46px; object-fit:cover; border-radius:14px; background:#f5f5f5; border:1px solid #f0f0f0; flex-shrink:0; }
@@ -231,7 +246,7 @@
             <div class="form-group"><label>📦 品名</label><input type="text" id="pName" placeholder="請輸入品名"></div>
 
             <div class="form-group">
-                <label>💰 含稅成本</label>
+                <label>💰 含稅成本 (¥)</label>
                 <input type="number" id="pPriceTax" placeholder="0">
             </div>
 
@@ -250,13 +265,14 @@
                     <input type="number" id="buyTaxRate" value="10">
                 </div>
                 <div class="form-group" id="buyTaxFreeGroup" style="flex:1; display:none;">
-                    <label>💸 退稅價</label>
+                    <label>💸 退稅價 (¥)</label>
                     <input type="number" id="buyTaxFreePrice" placeholder="0">
                 </div>
             </div>
 
+            <!-- 售價：台幣 -->
             <div class="form-group">
-                <label>💎 販售價格</label>
+                <label>💎 販售價格 (NT$)</label>
                 <input type="number" id="pPriceSell" placeholder="0">
             </div>
 
@@ -265,6 +281,7 @@
                 <div class="form-group" style="flex:1"><label>📍 地點</label><input type="text" id="pLoc" placeholder="地點"></div>
             </div>
             <div class="form-group"><label>👤 顧客名</label><input type="text" id="pCustomer" placeholder="客名"></div>
+
             <div class="form-group">
                 <label>🧤 負責買手</label>
                 <div class="btn-group">
@@ -273,7 +290,7 @@
                     <button class="btn-opt" onclick="setBuyer('Cupid', this)">Cupid</button>
                 </div>
                 <input type="hidden" id="pBuyer">
-                <div id="rayCardOptions" style="display:none; background:#fff1f2; padding:15px; border-radius:25px; margin-top:15px;">
+                <div id="rayCardOptions" style="display:none; background:var(--soft); padding:15px; border-radius:25px; margin-top:15px; border:1px solid var(--soft-border);">
                     <label style="color:var(--primary);">💳 選擇卡片</label>
                     <div style="display:flex; gap:8px;">
                         <button class="btn-opt" onclick="setRayCard('na爸卡', this)" style="padding:10px">na爸卡</button>
@@ -282,6 +299,7 @@
                     <input type="hidden" id="pRayCard">
                 </div>
             </div>
+
             <button class="submit-btn" onclick="saveData()">🚀 確認儲存</button>
         </div>
     </div>
@@ -320,7 +338,7 @@
 
             <div style="display:flex; gap:12px;">
                 <div class="form-group" style="flex:1.5">
-                    <label>💴 含稅價(標價)</label>
+                    <label>💴 含稅價(標價) (¥)</label>
                     <input type="number" id="preTaxPrice" placeholder="0">
                 </div>
                 <div class="form-group" id="taxRateGroup" style="flex:1; display:none;">
@@ -330,13 +348,15 @@
             </div>
 
             <div class="form-group" id="preTaxFreeGroup" style="display:none;">
-                <label>💸 退稅價</label>
+                <label>💸 退稅價 (¥)</label>
                 <input type="number" id="preTaxFreePrice" placeholder="0">
             </div>
 
             <div style="display:flex; gap:12px;">
                 <div class="form-group" style="flex:1"><label>🔢 數量</label><input type="number" id="preQty" value="1"></div>
-                <div class="form-group" style="flex:1"><label>💰 售價</label><input type="number" id="preSellPrice" placeholder="0"></div>
+
+                <!-- 售價：台幣 -->
+                <div class="form-group" style="flex:1"><label>💰 售價 (NT$)</label><input type="number" id="preSellPrice" placeholder="0"></div>
             </div>
             
             <button class="submit-btn" style="background:var(--green);" onclick="savePreOrder()">✅ 儲存預購</button>
@@ -366,6 +386,18 @@
             document.querySelectorAll('.sub-page').forEach(p => p.classList.remove('active'));
             if(pageId !== 'home') document.getElementById(pageId).classList.add('active');
             window.scrollTo(0,0);
+        }
+
+        // --- 金額/數量工具：更穩健，避免總額只算到一筆 ---
+        function toNum(v) {
+            if (v === null || v === undefined) return 0;
+            const s = String(v).replace(/,/g, '').trim();
+            const n = parseFloat(s);
+            return Number.isFinite(n) ? n : 0;
+        }
+        function toInt(v, fallback = 1) {
+            const n = parseInt(String(v).replace(/,/g, '').trim(), 10);
+            return Number.isFinite(n) ? n : fallback;
         }
 
         // --- 預購退稅切換（新增預購表單） ---
@@ -413,7 +445,7 @@
             activePickerCallback = callback;
             document.getElementById('modalOptions').innerHTML = options
                 .map(opt => `<button class="modal-btn" onclick="handlePick('${opt}')">${opt}</button>`).join('');
-            document.getElementById('selectorModal').display = 'flex';
+            document.getElementById('selectorModal').style.display = 'flex';
         }
         function handlePick(val) { 
             if(activePickerCallback) activePickerCallback(val); 
@@ -609,20 +641,20 @@
                                 </div>
                             </div>
                             <div class="item-actions">
-                                <button class="detail-toggle" onclick="toggleDetail('buy','${i.id}')">詳情 ▾</button>
                                 <button class="item-del" onclick="if(confirm('刪除？')) dataRef.child('${i.id}').remove()">✕</button>
+                                <button class="detail-toggle" onclick="toggleDetail('buy','${i.id}')">詳情 ▾</button>
                             </div>
                         </div>
 
                         <div id="buy-detail-${i.id}" class="item-detail">
                             <div class="price-grid">
                                 <div class="price-tag">
-                                    <span class="price-label">含稅成本</span>
+                                    <span class="price-label">含稅成本 (¥)</span>
                                     ¥ <span class="editable-field" onclick="editInList('${i.id}','priceTax','${i.priceTax}')">${i.priceTax}</span>
                                 </div>
-                                <div class="price-tag" style="background:#fff1f2;border:1px solid #ffe4e6;">
-                                    <span class="price-label">售價</span>
-                                    ¥ <span class="editable-field" onclick="editInList('${i.id}','priceSell','${i.priceSell}')">${i.priceSell}</span>
+                                <div class="price-tag" style="background:var(--soft);border:1px solid var(--soft-border);">
+                                    <span class="price-label">售價 (NT$)</span>
+                                    NT$ <span class="editable-field" onclick="editInList('${i.id}','priceSell','${i.priceSell}')">${i.priceSell}</span>
                                 </div>
                             </div>
 
@@ -676,20 +708,20 @@
                                         onclick="preRef.child('${i.id}').update({isBought: ${!i.isBought}})">
                                     ${i.isBought ? '● 已買到' : '○ 缺貨中'}
                                 </button>
-                                <button class="detail-toggle" onclick="toggleDetail('pre','${i.id}')">詳情 ▾</button>
                                 <button class="item-del" onclick="if(confirm('刪除？')) preRef.child('${i.id}').remove()">✕</button>
+                                <button class="detail-toggle" onclick="toggleDetail('pre','${i.id}')">詳情 ▾</button>
                             </div>
                         </div>
 
                         <div id="pre-detail-${i.id}" class="item-detail">
                             <div class="price-grid">
                                 <div class="price-tag">
-                                    <span class="price-label">含稅標價</span>
+                                    <span class="price-label">含稅標價 (¥)</span>
                                     ¥ <span class="editable-field" onclick="editPreInList('${i.id}','taxIncludedPrice','${i.taxIncludedPrice}')">${i.taxIncludedPrice}</span>
                                 </div>
-                                <div class="price-tag" style="background:#fff1f2;border:1px solid #ffe4e6;">
-                                    <span class="price-label">售價</span>
-                                    ¥ <span class="editable-field" onclick="editPreInList('${i.id}','sellPrice','${i.sellPrice}')">${i.sellPrice}</span>
+                                <div class="price-tag" style="background:var(--soft);border:1px solid var(--soft-border);">
+                                    <span class="price-label">售價 (NT$)</span>
+                                    NT$ <span class="editable-field" onclick="editPreInList('${i.id}','sellPrice','${i.sellPrice}')">${i.sellPrice}</span>
                                 </div>
                             </div>
 
@@ -720,24 +752,40 @@
         function renderSummary(buyArr, preArr) {
             const groups = {};
             buyArr.forEach(i => { 
-                if(!groups[i.customer]) groups[i.customer] = { buy: [], pre: [] }; 
-                groups[i.customer].buy.push(i); 
+                const key = (i.customer || "未填").trim();
+                if(!groups[key]) groups[key] = { buy: [], pre: [] }; 
+                groups[key].buy.push(i); 
             });
             preArr.forEach(i => { 
-                if(!groups[i.customer]) groups[i.customer] = { buy: [], pre: [] }; 
-                groups[i.customer].pre.push(i); 
+                const key = (i.customer || "未填").trim();
+                if(!groups[key]) groups[key] = { buy: [], pre: [] }; 
+                groups[key].pre.push(i); 
             });
 
             document.getElementById('customerList').innerHTML = Object.keys(groups).map(c => {
-                const bTotal = groups[c].buy.reduce((s, n) => s + (parseFloat(n.priceSell || 0)*(parseInt(n.qty)||1)), 0);
-                const pTotal = groups[c].pre.reduce((s, n) => s + (n.isBought ? (parseFloat(n.sellPrice || 0)*(parseInt(n.qty)||1)) : 0), 0);
+                /* 現場：售價（NT$） * qty */
+                const bTotal = groups[c].buy.reduce((s, n) => {
+                    const price = toNum(n.priceSell);
+                    const qty = toInt(n.qty, 1);
+                    return s + (price * qty);
+                }, 0);
+
+                /* 預購：只有已買到才算應收（NT$） * qty */
+                const pTotal = groups[c].pre.reduce((s, n) => {
+                    if(!n.isBought) return s;
+                    const price = toNum(n.sellPrice);
+                    const qty = toInt(n.qty, 1);
+                    return s + (price * qty);
+                }, 0);
+
+                const total = bTotal + pTotal;
 
                 const buyLines = groups[c].buy.map(p => `
                     <div class="summary-item">
                         <img src="${p.img || ''}" class="summary-img">
                         <div class="summary-text">
-                            <div>【現場】${p.name} (x${p.qty})</div>
-                            <div class="summary-sub">售價 ¥${p.priceSell}</div>
+                            <div>【現場】${p.name} (x${p.qty || 1})</div>
+                            <div class="summary-sub">售價 NT$${p.priceSell || 0}</div>
                         </div>
                     </div>
                 `).join('');
@@ -746,8 +794,8 @@
                     <div class="summary-item">
                         <img src="${p.img || ''}" class="summary-img">
                         <div class="summary-text">
-                            <div>【預購】${p.isBought ? '[已買]' : '[缺貨]'} ${p.name} (x${p.qty})</div>
-                            <div class="summary-sub">售價 ¥${p.sellPrice}</div>
+                            <div>【預購】${p.isBought ? '[已買]' : '[缺貨]'} ${p.name} (x${p.qty || 1})</div>
+                            <div class="summary-sub">售價 NT$${p.sellPrice || 0}</div>
                         </div>
                     </div>
                 `).join('');
@@ -755,7 +803,7 @@
                 return `<div class="card">
                     <div style="font-weight:bold; display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; padding-bottom:10px; margin-bottom:10px;">
                         <span>👤 ${c}</span>
-                        <span style="color:var(--primary)">總應收 ¥${bTotal + pTotal}</span>
+                        <span style="color:var(--primary)">總應收 NT$${total}</span>
                     </div>
                     <div class="summary-list">
                         ${buyLines}${preLines}
@@ -770,17 +818,17 @@
                 "顧客": i.customer, 
                 "品名": i.name, 
                 "數量": i.qty, 
-                "售價": i.priceSell, 
-                "含稅成本": i.priceTax 
+                "售價(NT$)": i.priceSell, 
+                "含稅成本(¥)": i.priceTax 
             }));
             const p = Object.values(rawPre).map(i => ({ 
                 "類型": "預購", 
                 "顧客": i.customer, 
                 "品名": i.name, 
                 "數量": i.qty, 
-                "售價": i.sellPrice, 
-                "含稅標價": i.taxIncludedPrice, 
-                "退稅價": i.isTaxFree ? i.taxFreePrice : "無", 
+                "售價(NT$)": i.sellPrice, 
+                "含稅標價(¥)": i.taxIncludedPrice, 
+                "退稅價(¥)": i.isTaxFree ? i.taxFreePrice : "無", 
                 "狀態": i.isBought ? "已買" : "缺" 
             }));
             const ws = XLSX.utils.json_to_sheet([...d, ...p]);
