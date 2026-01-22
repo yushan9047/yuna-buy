@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yuna 代購管理系統 v31 - 清空功能版</title>
+    <title>Yuna 代購管理系統 v32</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -16,6 +16,7 @@
             --text-main: #2b2d42; 
             --text-sub: #8d99ae; 
             --shadow: 0 8px 30px rgba(0,0,0,0.04);
+            --green: #2a9d8f;
         }
         
         body { 
@@ -23,11 +24,9 @@
             background: var(--bg); margin: 0; color: var(--text-main); line-height: 1.6; 
         }
 
-        /* --- 區塊隱藏邏輯 --- */
         .sub-page { display: none; padding: 20px; min-height: 100vh; box-sizing: border-box; }
         .sub-page.active { display: block; }
 
-        /* --- 標題與導覽 --- */
         .main-header { text-align: center; padding: 50px 0 20px 0; }
         .main-header h1 { margin: 0; font-size: 28px; font-weight: 800; color: var(--primary); letter-spacing: 2px; }
 
@@ -35,7 +34,6 @@
         .header-bar h2 { margin: 0; font-size: 20px; font-weight: 700; }
         .back-btn { background: white; border: 1.5px solid #eee; padding: 10px 20px; border-radius: 50px; font-size: 14px; font-weight: bold; cursor: pointer; }
 
-        /* --- 首頁按鈕 --- */
         #homePage { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 20px; align-content: center; }
         .main-btn { 
             aspect-ratio: 1/1; border-radius: 35px; border: none; font-size: 18px; font-weight: bold; color: white; 
@@ -48,7 +46,6 @@
         .btn-pre { background: #2a9d8f; }
         .btn-cust { background: #2b2d42; grid-column: span 2; aspect-ratio: auto; height: 80px; }
 
-        /* --- 大圓角輸入框 --- */
         .card { background: var(--card-bg); padding: 25px; border-radius: 30px; box-shadow: var(--shadow); margin-bottom: 20px; }
         .form-group { margin-bottom: 20px; }
         label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 10px; margin-left: 15px; color: var(--text-sub); }
@@ -59,13 +56,11 @@
         }
         input:focus { outline: none; border-color: var(--primary); box-shadow: 0 5px 20px rgba(230,57,70,0.1); }
 
-        /* --- 按鈕組 --- */
         .btn-group { display: flex; gap: 10px; }
         .btn-opt { flex: 1; padding: 14px; border: 1.5px solid #eee; border-radius: 50px; background: white; font-weight: bold; color: #555; cursor: pointer; }
         .btn-opt.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 5px 15px rgba(230,57,70,0.2); }
         .submit-btn { width: 100%; padding: 20px; background: var(--primary); color: white; border: none; border-radius: 50px; font-size: 18px; font-weight: bold; margin-top: 15px; cursor: pointer; box-shadow: 0 10px 20px rgba(230,57,70,0.2); }
 
-        /* --- 列表項目風格 --- */
         .item-row { background: white; padding: 18px; border-radius: 28px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start; box-shadow: 0 4px 15px rgba(0,0,0,0.02); border: 1px solid #f9f9f9; }
         .item-img { width: 85px; height: 85px; object-fit: cover; border-radius: 20px; background: #f8f8f8; flex-shrink: 0; border: 1px dashed #eee; cursor: pointer; }
         .item-info { flex: 1; min-width: 0; }
@@ -78,11 +73,9 @@
         .tag { background: #f0f0f0; padding: 6px 12px; border-radius: 50px; font-size: 11px; color: #666; font-weight: bold; cursor: pointer; }
         .tag-active { background: #fff1f2; color: var(--primary); border: 1px solid #ffe4e6; }
 
-        /* --- 彈窗設計 --- */
         .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; justify-content:center; align-items:flex-end; }
         .modal-content { background:white; padding:30px; border-radius:35px 35px 0 0; width:100%; max-height: 80vh; overflow-y: auto; }
         .modal-btn { display:block; width:100%; padding:18px; margin:10px 0; border:1px solid #f0f0f0; border-radius:50px; font-size:16px; font-weight:bold; background:#fff; text-align: center; cursor: pointer; }
-        .img-tip { font-size: 9px; color: #bbb; text-align: center; display: block; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -149,8 +142,7 @@
     <div id="part3" class="sub-page">
         <div class="header-bar"><button class="back-btn" onclick="showPage('home')">← 返回</button><h2>對帳統計</h2></div>
         <button onclick="exportToExcel()" class="submit-btn" style="background:#2b2d42; margin-bottom: 10px;">📊 匯出對帳 Excel</button>
-        <button onclick="clearCurrentRecords()" class="submit-btn" style="background:#8d99ae; margin-bottom: 25px; font-size: 14px; padding: 15px;">🗑️ 清空所有紀錄 (新航次開始)</button>
-        
+        <button onclick="clearAllData()" class="submit-btn" style="background:#8d99ae; margin-bottom: 25px; font-size: 14px; padding: 15px;">🗑️ 清空所有數據 (新航次開始)</button>
         <div id="customerList"></div>
     </div>
 
@@ -161,18 +153,37 @@
             <div class="form-group"><label>📷 照片</label><input type="file" id="preImg" accept="image/*"></div>
             <div class="form-group"><label>📦 品名</label><input type="text" id="preName" placeholder="名稱"></div>
             <div class="form-group"><label>👤 顧客名</label><input type="text" id="preCust" placeholder="客名"></div>
+            
+            <div class="form-group">
+                <label>🏷️ 退稅設定</label>
+                <div class="btn-group">
+                    <button id="taxBtnYes" class="btn-opt" onclick="togglePreTax(true)">有退稅</button>
+                    <button id="taxBtnNo" class="btn-opt active" onclick="togglePreTax(false)">無退稅</button>
+                </div>
+                <input type="hidden" id="preIsTaxFree" value="false">
+            </div>
+
+            <div style="display:flex; gap:12px;">
+                <div class="form-group" style="flex:1.5"><label>💴 含稅價(標價)</label><input type="number" id="preTaxPrice" placeholder="0" oninput="calcTaxPrice()"></div>
+                <div class="form-group" style="flex:1"><label>％ 稅率</label><input type="number" id="preTaxRate" value="10" oninput="calcTaxPrice()"></div>
+            </div>
+
+            <div id="taxFreeResult" style="display:none; background:#f0f9f8; padding:15px; border-radius:20px; margin-bottom:20px;">
+                <label style="color:var(--green); margin-left:0;">✨ 自動計算退稅價：¥ <span id="preTaxFreeVal">0</span></label>
+            </div>
+
             <div style="display:flex; gap:12px;">
                 <div class="form-group" style="flex:1"><label>🔢 數量</label><input type="number" id="preQty" value="1"></div>
-                <div class="form-group" style="flex:1"><label>💴 成本</label><input type="number" id="preBuyPrice" placeholder="0"></div>
+                <div class="form-group" style="flex:1"><label>💰 售價</label><input type="number" id="preSellPrice" placeholder="0"></div>
             </div>
-            <div class="form-group"><label>💰 售價</label><input type="number" id="preSellPrice" placeholder="0"></div>
-            <button class="submit-btn" style="background:#2a9d8f;" onclick="savePreOrder()">✅ 儲存預購</button>
+            
+            <button class="submit-btn" style="background:var(--green);" onclick="savePreOrder()">✅ 儲存預購</button>
         </div>
         <div id="preOrderList"></div>
     </div>
 
     <script>
-        // --- 核心配置 ---
+        // --- Firebase 配置 ---
         const firebaseConfig = {
             apiKey: "AIzaSyBxy3g2MS18oJdE2v-JAZ9VWXZwZQ9W4yM",
             databaseURL: "https://yunabuy-cf20c-default-rtdb.firebaseio.com/",
@@ -193,6 +204,25 @@
             window.scrollTo(0,0);
         }
 
+        // --- 預購專用邏輯 ---
+        function togglePreTax(isTaxFree) {
+            document.getElementById('preIsTaxFree').value = isTaxFree;
+            document.getElementById('taxBtnYes').classList.toggle('active', isTaxFree);
+            document.getElementById('taxBtnNo').classList.toggle('active', !isTaxFree);
+            document.getElementById('taxFreeResult').style.display = isTaxFree ? 'block' : 'none';
+            calcTaxPrice();
+        }
+
+        function calcTaxPrice() {
+            const price = parseFloat(document.getElementById('preTaxPrice').value) || 0;
+            const rate = parseFloat(document.getElementById('preTaxRate').value) || 10;
+            // 公式：含稅價 / (1 + 稅率)
+            const taxFree = Math.round(price / (1 + (rate/100)));
+            document.getElementById('preTaxFreeVal').innerText = taxFree;
+            return taxFree;
+        }
+
+        // --- 買手與圖片編輯 (維持原樣) ---
         function setBuyer(name, btn) {
             document.getElementById('pBuyer').value = name;
             document.querySelectorAll('#part1 .btn-opt').forEach(b => b.classList.remove('active'));
@@ -231,6 +261,7 @@
             input.click();
         }
 
+        // --- 儲存資料 ---
         async function saveData() {
             const file = document.getElementById('pImg').files[0];
             let base64 = "";
@@ -244,8 +275,7 @@
                 img: base64, time: new Date().toLocaleString()
             });
             ['pName','pPriceN','pPriceTax','pPriceSell','pLoc','pCustomer','pImg','pQty'].forEach(id=> {
-                let el = document.getElementById(id);
-                if(el) el.value = (id === 'pQty' ? '1' : '');
+                let el = document.getElementById(id); if(el) el.value = (id === 'pQty' ? '1' : '');
             });
             showPage('home');
         }
@@ -254,18 +284,27 @@
             const file = document.getElementById('preImg').files[0];
             let base64 = "";
             if(file) base64 = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(file); });
+            
+            const isTaxFree = document.getElementById('preIsTaxFree').value === 'true';
+            const taxFreeVal = isTaxFree ? calcTaxPrice() : 0;
+
             preRef.push({
                 name: document.getElementById('preName').value || "未命名", customer: document.getElementById('preCust').value || "未填",
                 qty: document.getElementById('preQty').value || "1",
-                buyPrice: document.getElementById('preBuyPrice').value || "0", sellPrice: document.getElementById('preSellPrice').value || "0",
+                sellPrice: document.getElementById('preSellPrice').value || "0",
+                isTaxFree: isTaxFree,
+                taxRate: document.getElementById('preTaxRate').value || "10",
+                taxIncludedPrice: document.getElementById('preTaxPrice').value || "0",
+                taxFreePrice: taxFreeVal,
                 isBought: false, img: base64, time: new Date().toLocaleString()
             });
-            ['preName','preCust','preBuyPrice','preSellPrice','preImg','preQty'].forEach(id=> {
-                let el = document.getElementById(id);
-                if(el) el.value = (id === 'preQty' ? '1' : '');
+            ['preName','preCust','preTaxPrice','preSellPrice','preImg','preQty'].forEach(id=> {
+                let el = document.getElementById(id); if(el) el.value = (id === 'preQty' ? '1' : '');
             });
+            togglePreTax(false);
         }
 
+        // --- 渲染列表 ---
         dataRef.on('value', snap => { rawData = snap.val() || {}; renderLists(); });
         preRef.on('value', snap => { rawPre = snap.val() || {}; renderLists(); });
 
@@ -275,18 +314,11 @@
             else { let v = prompt(`修改 ${field}:`, current); if(v !== null) { let up = {}; up[field] = v; dataRef.child(id).update(up); } }
         }
 
-        function editPreOrder(id, field, current) {
-            let v = prompt(`修改預購 ${field}:`, current); if(v !== null) { let up = {}; up[field] = v; preRef.child(id).update(up); }
-        }
-
         function renderLists() {
             const buyArr = Object.entries(rawData).map(([id, val]) => ({ id, ...val })).reverse();
             document.getElementById('allList').innerHTML = buyArr.map(i => `
                 <div class="item-row">
-                    <div onclick="triggerImgEdit('buy', '${i.id}')">
-                        <img src="${i.img || ''}" class="item-img">
-                        <span class="img-tip">點擊換圖</span>
-                    </div>
+                    <div onclick="triggerImgEdit('buy', '${i.id}')"><img src="${i.img || ''}" class="item-img"><span style="font-size:9px;display:block;text-align:center;color:#ccc">換圖</span></div>
                     <div class="item-info">
                         <div style="font-weight:bold"><span class="editable-field" onclick="editInList('${i.id}','name','${i.name}')">${i.name}</span></div>
                         <div class="price-grid">
@@ -296,35 +328,31 @@
                         <div class="tag-row">
                             <span class="tag tag-active" onclick="editInList('${i.id}','qty','${i.qty}')">x ${i.qty || 1}</span>
                             <span class="tag tag-active" onclick="editInList('${i.id}','customer','${i.customer}')">👤 ${i.customer}</span>
-                            <span class="tag" onclick="editInList('${i.id}','loc','${i.loc}')">📍 ${i.loc}</span>
-                            <span class="tag tag-active" onclick="editInList('${i.id}','buyer','${i.buyer}')">🧤 ${i.buyer}</span>
-                            ${i.buyer === 'Ray' ? `<span class="tag tag-active" onclick="editInList('${i.id}','cardInfo','${i.cardInfo}')">💳 ${i.cardInfo || '選卡'}</span>` : ''}
+                            <span class="tag" onclick="editInList('${i.id}','buyer','${i.buyer}')">🧤 ${i.buyer}</span>
                         </div>
                     </div>
-                    <button onclick="if(confirm('刪除？')) dataRef.child('${i.id}').remove()" style="border:none;background:none;color:#ddd; padding:5px;">✕</button>
+                    <button onclick="if(confirm('刪除？')) dataRef.child('${i.id}').remove()" style="border:none;background:none;color:#ddd;">✕</button>
                 </div>
             `).join('');
 
             const preArr = Object.entries(rawPre).map(([id, val]) => ({ id, ...val })).reverse();
             document.getElementById('preOrderList').innerHTML = preArr.map(i => `
                 <div class="item-row" style="border-left: 6px solid ${i.isBought ? '#2ecc71' : '#eee'}">
-                    <div onclick="triggerImgEdit('pre', '${i.id}')">
-                        <img src="${i.img || ''}" class="item-img">
-                        <span class="img-tip">點擊換圖</span>
-                    </div>
+                    <div onclick="triggerImgEdit('pre', '${i.id}')"><img src="${i.img || ''}" class="item-img"></div>
                     <div class="item-info">
-                        <div style="font-weight:bold"><span class="editable-field" onclick="editPreOrder('${i.id}','name','${i.name}')">${i.name}</span></div>
+                        <div style="font-weight:bold"><span>${i.name}</span></div>
                         <div class="price-grid">
-                            <div class="price-tag"><span class="price-label">成本</span>¥ <span class="editable-field" onclick="editPreOrder('${i.id}','buyPrice','${i.buyPrice}')">${i.buyPrice}</span></div>
-                            <div class="price-tag" style="background:#fff1f2;"><span class="price-label">售價</span>¥ <span class="editable-field" onclick="editPreOrder('${i.id}','sellPrice','${i.sellPrice}')">${i.sellPrice}</span></div>
+                            <div class="price-tag"><span class="price-label">含稅標價</span>¥ ${i.taxIncludedPrice}</div>
+                            <div class="price-tag" style="background:#fff1f2;"><span class="price-label">💰 售價</span>¥ ${i.sellPrice}</div>
                         </div>
                         <div class="tag-row">
-                            <span class="tag tag-active" onclick="editPreOrder('${i.id}','qty','${i.qty}')">x ${i.qty || 1}</span>
-                            <span class="tag tag-active" onclick="editPreOrder('${i.id}','customer','${i.customer}')">👤 ${i.customer}</span>
+                            <span class="tag tag-active">x ${i.qty}</span>
+                            <span class="tag tag-active">👤 ${i.customer}</span>
+                            ${i.isTaxFree ? `<span class="tag" style="background:#e9f5f3; color:#2a9d8f;">✨ 退稅價 ¥${i.taxFreePrice} (${i.taxRate}%)</span>` : '<span class="tag">無退稅</span>'}
                             <span class="tag ${i.isBought ? 'tag-active' : ''}" onclick="preRef.child('${i.id}').update({isBought: ${!i.isBought}})">${i.isBought ? '● 已買到' : '○ 缺貨中'}</span>
                         </div>
                     </div>
-                    <button onclick="if(confirm('刪除？')) preRef.child('${i.id}').remove()" style="border:none;background:none;color:#ddd; padding:5px;">✕</button>
+                    <button onclick="if(confirm('刪除？')) preRef.child('${i.id}').remove()" style="border:none;background:none;color:#ddd;">✕</button>
                 </div>
             `).join('');
             renderSummary(buyArr, preArr);
@@ -340,43 +368,27 @@
                 return `<div class="card">
                     <div style="font-weight:bold; display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; padding-bottom:10px; margin-bottom:10px;"><span>👤 ${c}</span><span style="color:var(--primary)">總應收 ¥${bTotal + pTotal}</span></div>
                     <div style="font-size:12px; line-height:1.8; color:#666;">
-                        ${groups[c].buy.map(p => `• ${p.name} (x${p.qty || 1}) - ¥${p.priceSell}`).join('<br>')}
-                        ${groups[c].pre.map(p => {
-                            const statusLabel = p.isBought ? '<span style="color:#2ecc71; font-weight:bold;">[已買]</span>' : '<span style="color:#e63946;">[缺貨]</span>';
-                            return `• ${statusLabel} ${p.name} (x${p.qty || 1}) - ${p.isBought ? '¥'+p.sellPrice : '<strike>¥'+p.sellPrice+'</strike>'}`;
-                        }).join('<br>')}
+                        ${groups[c].buy.map(p => `• ${p.name} (x${p.qty}) - ¥${p.priceSell}`).join('<br>')}
+                        ${groups[c].pre.map(p => `• ${p.isBought ? '[已買]' : '[缺貨]'} ${p.name} (x${p.qty}) - ¥${p.sellPrice}`).join('<br>')}
                     </div>
                 </div>`;
             }).join('');
         }
 
         function exportToExcel() {
-            const d = Object.values(rawData).map(i => ({ "類型": "現場", "顧客": i.customer, "品名": i.name, "數量": i.qty, "售價": i.priceSell, "成本": i.priceTax }));
-            const p = Object.values(rawPre).map(i => ({ "類型": "預購", "顧客": i.customer, "品名": i.name, "數量": i.qty, "售價": i.sellPrice, "狀態": i.isBought ? "已買" : "缺" }));
+            const d = Object.values(rawData).map(i => ({ "類型": "現場", "顧客": i.customer, "品名": i.name, "數量": i.qty, "售價": i.priceSell, "含稅成本": i.priceTax }));
+            const p = Object.values(rawPre).map(i => ({ "類型": "預購", "顧客": i.customer, "品名": i.name, "數量": i.qty, "售價": i.sellPrice, "含稅標價": i.taxIncludedPrice, "退稅價": i.isTaxFree ? i.taxFreePrice : "無", "狀態": i.isBought ? "已買" : "缺" }));
             const ws = XLSX.utils.json_to_sheet([...d, ...p]);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "對帳單");
             XLSX.writeFile(wb, `Yuna對帳單_${new Date().toLocaleDateString()}.xlsx`);
         }
 
-        // --- 新增：清空所有數據邏輯 ---
-        async function clearCurrentRecords() {
-            const confirm1 = confirm("⚠️ 確定要【清空所有數據】嗎？\n這將會清除目前的採購清單與預購內容！");
-            if (!confirm1) return;
-
-            const confirm2 = confirm("🚨 再次確認：數據刪除後無法復原！\n請確定你已經完成匯出對帳。");
-            if (!confirm2) return;
-
-            try {
-                // 清除 Firebase 兩個節點
-                await Promise.all([
-                    dataRef.remove(),
-                    preRef.remove()
-                ]);
-                alert("✅ 資料已歸零，可開始新一輪採購！");
+        async function clearAllData() {
+            if(confirm("⚠️ 確定要清空所有數據嗎？") && confirm("🚨 資料刪除後無法復原，確定？")) {
+                await Promise.all([dataRef.remove(), preRef.remove()]);
+                alert("✅ 資料已歸零！");
                 showPage('home');
-            } catch (err) {
-                alert("❌ 清空失敗，請檢查網路：" + err);
             }
         }
     </script>
