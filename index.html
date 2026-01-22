@@ -105,12 +105,17 @@
             <div class="form-group"><label>📷 商品照片</label><input type="file" id="pImg" accept="image/*"></div>
             <div class="form-group"><label>📦 品名</label><input type="text" id="pName" placeholder="請輸入品名"></div>
             <div style="display:flex; gap:12px;">
-                <div class="form-group" style="flex:1"><label>💴 未稅價</label><input type="number" id="pPriceN" placeholder="0"></div>
-                <div class="form-group" style="flex:1"><label>💰 含稅成本</label><input type="number" id="pPriceTax" placeholder="0"></div>
+                <div class="form-group" style="flex:1">
+                    <label>💴 未稅價</label>
+                    <input type="number" id="pPriceN" placeholder="0">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label>💰 含稅成本</label>
+                    <input type="number" id="pPriceTax" placeholder="0">
+                </div>
             </div>
-            <div class="form-group"><label>💎 販售價格</label><input type="number" id="pPriceSell" placeholder="0"></div>
 
-            <!-- 現場採購退稅設定 -->
+            <!-- 現場採購退稅設定：移到含稅成本下面 -->
             <div class="form-group">
                 <label>🏷️ 退稅設定</label>
                 <div class="btn-group">
@@ -128,6 +133,11 @@
                     <label>💸 退稅價</label>
                     <input type="number" id="buyTaxFreePrice" placeholder="0">
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label>💎 販售價格</label>
+                <input type="number" id="pPriceSell" placeholder="0">
             </div>
 
             <div style="display:flex; gap:12px;">
@@ -193,7 +203,7 @@
                     <label>💴 含稅價(標價)</label>
                     <input type="number" id="preTaxPrice" placeholder="0">
                 </div>
-                <div class="form-group" id="taxRateGroup" style="flex:1;">
+                <div class="form-group" id="taxRateGroup" style="flex:1; display:none;">
                     <label>％ 稅率</label>
                     <input type="number" id="preTaxRate" value="10">
                 </div>
@@ -227,7 +237,9 @@
         const dataRef = db.ref('yuna_v25_data'); 
         const preRef = db.ref('yuna_v25_preorder'); 
 
-        let rawData = {}; let rawPre = {}; let activePickerCallback = null;
+        let rawData = {}; 
+        let rawPre = {}; 
+        let activePickerCallback = null;
 
         function showPage(pageId) {
             document.getElementById('homePage').style.display = (pageId === 'home') ? 'grid' : 'none';
@@ -236,7 +248,7 @@
             window.scrollTo(0,0);
         }
 
-        // --- 預購專用邏輯（退稅切換＋顯示欄位） ---
+        // --- 預購退稅切換 ---
         function togglePreTax(isTaxFree) {
             document.getElementById('preIsTaxFree').value = isTaxFree;
             document.getElementById('taxBtnYes').classList.toggle('active', isTaxFree);
@@ -249,7 +261,7 @@
             if (preTaxFreeGroup) preTaxFreeGroup.style.display = isTaxFree ? 'block' : 'none';
         }
 
-        // --- 現場採購退稅切換 ---
+        // --- 現場退稅切換 ---
         function toggleBuyTax(isTaxFree) {
             document.getElementById('buyIsTaxFree').value = isTaxFree;
             document.getElementById('buyTaxBtnYes').classList.toggle('active', isTaxFree);
@@ -262,7 +274,7 @@
             if (buyTaxFreeGroup) buyTaxFreeGroup.style.display = isTaxFree ? 'block' : 'none';
         }
 
-        // --- 買手與圖片編輯 (維持原樣) ---
+        // --- 買手與圖片 ---
         function setBuyer(name, btn) {
             document.getElementById('pBuyer').value = name;
             document.querySelectorAll('#part1 .btn-opt').forEach(b => b.classList.remove('active'));
@@ -277,12 +289,20 @@
         }
 
         function openPicker(title, options, callback) {
-            document.getElementById('modalTitle').innerText = title; activePickerCallback = callback;
-            document.getElementById('modalOptions').innerHTML = options.map(opt => `<button class="modal-btn" onclick="handlePick('${opt}')">${opt}</button>`).join('');
+            document.getElementById('modalTitle').innerText = title; 
+            activePickerCallback = callback;
+            document.getElementById('modalOptions').innerHTML = options
+                .map(opt => `<button class="modal-btn" onclick="handlePick('${opt}')">${opt}</button>`).join('');
             document.getElementById('selectorModal').style.display = 'flex';
         }
-        function handlePick(val) { if(activePickerCallback) activePickerCallback(val); closeModal(); }
-        function closeModal() { document.getElementById('selectorModal').style.display = 'none'; activePickerCallback = null; }
+        function handlePick(val) { 
+            if(activePickerCallback) activePickerCallback(val); 
+            closeModal(); 
+        }
+        function closeModal() { 
+            document.getElementById('selectorModal').style.display = 'none'; 
+            activePickerCallback = null; 
+        }
 
         function triggerImgEdit(refType, id) {
             const input = document.getElementById('editImgInput');
@@ -301,11 +321,15 @@
             input.click();
         }
 
-        // --- 儲存現場採購資料 ---
+        // --- 儲存現場 ---
         async function saveData() {
             const file = document.getElementById('pImg').files[0];
             let base64 = "";
-            if(file) base64 = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(file); });
+            if(file) base64 = await new Promise(res => { 
+                const reader = new FileReader(); 
+                reader.onload = e => res(e.target.result); 
+                reader.readAsDataURL(file); 
+            });
 
             const isTaxFreeBuy = document.getElementById('buyIsTaxFree').value === 'true';
             const buyTaxRate = document.getElementById('buyTaxRate').value || "10";
@@ -332,17 +356,19 @@
                 if(el) el.value = (id === 'pQty' ? '1' : '');
             });
 
-            // 重置現場退稅切換
             toggleBuyTax(false);
-
             showPage('home');
         }
 
-        // --- 儲存預購資料 ---
+        // --- 儲存預購 ---
         async function savePreOrder() {
             const file = document.getElementById('preImg').files[0];
             let base64 = "";
-            if(file) base64 = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(file); });
+            if(file) base64 = await new Promise(res => { 
+                const reader = new FileReader(); 
+                reader.onload = e => res(e.target.result); 
+                reader.readAsDataURL(file); 
+            });
             
             const isTaxFree = document.getElementById('preIsTaxFree').value === 'true';
             const taxRateVal = document.getElementById('preTaxRate').value || "10";
@@ -365,11 +391,10 @@
                 let el = document.getElementById(id); 
                 if(el) el.value = (id === 'preQty' ? '1' : '');
             });
-            // 重置退稅切換
             togglePreTax(false);
         }
 
-        // --- 渲染列表 ---
+        // --- 監聽資料 ---
         dataRef.on('value', snap => { rawData = snap.val() || {}; renderLists(); });
         preRef.on('value', snap => { rawPre = snap.val() || {}; renderLists(); });
 
@@ -394,7 +419,6 @@
             }
         }
 
-        // --- 預購清單可編輯（純手動，不再自動計算） ---
         function editPreInList(id, field, current) {
             let v = prompt(`修改 ${field}:`, current);
             if (v === null) return;
@@ -403,7 +427,6 @@
             preRef.child(id).update(up);
         }
 
-        // --- 清單項目有/無退稅切換（預購） ---
         function togglePreTaxItem(id) {
             const item = rawPre[id];
             if (!item) return;
@@ -418,7 +441,6 @@
             preRef.child(id).update(up);
         }
 
-        // --- 清單項目有/無退稅切換（現場） ---
         function toggleBuyTaxItem(id) {
             const item = rawData[id];
             if (!item) return;
@@ -502,18 +524,28 @@
                     <button onclick="if(confirm('刪除？')) preRef.child('${i.id}').remove()" style="border:none;background:none;color:#ddd;">✕</button>
                 </div>
             `).join('');
+
             renderSummary(buyArr, preArr);
         }
 
         function renderSummary(buyArr, preArr) {
             const groups = {};
-            buyArr.forEach(i => { if(!groups[i.customer]) groups[i.customer] = { buy: [], pre: [] }; groups[i.customer].buy.push(i); });
-            preArr.forEach(i => { if(!groups[i.customer]) groups[i.customer] = { buy: [], pre: [] }; groups[i.customer].pre.push(i); });
+            buyArr.forEach(i => { 
+                if(!groups[i.customer]) groups[i.customer] = { buy: [], pre: [] }; 
+                groups[i.customer].buy.push(i); 
+            });
+            preArr.forEach(i => { 
+                if(!groups[i.customer]) groups[i.customer] = { buy: [], pre: [] }; 
+                groups[i.customer].pre.push(i); 
+            });
             document.getElementById('customerList').innerHTML = Object.keys(groups).map(c => {
                 const bTotal = groups[c].buy.reduce((s, n) => s + (parseFloat(n.priceSell)*(parseInt(n.qty)||1)), 0);
                 const pTotal = groups[c].pre.reduce((s, n) => s + (n.isBought ? (parseFloat(n.sellPrice)*(parseInt(n.qty)||1)) : 0), 0);
                 return `<div class="card">
-                    <div style="font-weight:bold; display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; padding-bottom:10px; margin-bottom:10px;"><span>👤 ${c}</span><span style="color:var(--primary)">總應收 ¥${bTotal + pTotal}</span></div>
+                    <div style="font-weight:bold; display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; padding-bottom:10px; margin-bottom:10px;">
+                        <span>👤 ${c}</span>
+                        <span style="color:var(--primary)">總應收 ¥${bTotal + pTotal}</span>
+                    </div>
                     <div style="font-size:12px; line-height:1.8; color:#666;">
                         ${groups[c].buy.map(p => `• ${p.name} (x${p.qty}) - ¥${p.priceSell}`).join('<br>')}
                         ${groups[c].pre.map(p => `• ${p.isBought ? '[已買]' : '[缺貨]'} ${p.name} (x${p.qty}) - ¥${p.sellPrice}`).join('<br>')}
@@ -554,6 +586,12 @@
                 showPage('home');
             }
         }
+
+        // 預設載入時，把退稅欄位都關閉
+        document.addEventListener('DOMContentLoaded', () => {
+            togglePreTax(false);
+            toggleBuyTax(false);
+        });
     </script>
 </body>
 </html>
