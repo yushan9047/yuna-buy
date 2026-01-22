@@ -6,7 +6,7 @@
     <title>Yuna 代購管理系統 v32</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-    <!-- ✅ 新增：Firebase Storage -->
+    <!-- Firebase Storage -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
@@ -376,7 +376,6 @@
         const db = firebase.database();
         const dataRef = db.ref('yuna_v25_data'); 
         const preRef = db.ref('yuna_v25_preorder'); 
-        // ✅ 新增：Storage
         const storage = firebase.storage();
 
         let rawData = {}; 
@@ -458,17 +457,23 @@
             activePickerCallback = null; 
         }
 
-        // ✅ 共用：上傳圖片到 Storage 並回傳 URL
+        // ✅ 上傳圖片到 Storage，失敗時不中斷流程
         async function uploadImageAndGetUrl(file, folder) {
             if (!file) return "";
-            const storageRef = storage.ref();
-            const fileRef = storageRef.child(`${folder}/${Date.now()}_${file.name}`);
-            await fileRef.put(file);
-            const url = await fileRef.getDownloadURL();
-            return url;
+            try {
+                const storageRef = storage.ref();
+                const fileRef = storageRef.child(`${folder}/${Date.now()}_${file.name}`);
+                await fileRef.put(file);
+                const url = await fileRef.getDownloadURL();
+                return url;
+            } catch (e) {
+                console.error("圖片上傳失敗：", e);
+                alert("圖片上傳失敗，但商品資訊會照常儲存。\n請稍後再試，或到 Firebase Storage 檢查權限規則。");
+                return "";
+            }
         }
 
-        // ✅ 改成使用 Storage 的圖片修改
+        // 使用 Storage 的圖片修改
         function triggerImgEdit(refType, id) {
             const input = document.getElementById('editImgInput');
             input.onchange = async (e) => {
@@ -477,7 +482,7 @@
                 const folder = refType === 'buy' ? 'buy' : 'preorder';
                 const imgUrl = await uploadImageAndGetUrl(file, folder);
                 const dbRef = (refType === 'buy') ? dataRef : preRef;
-                dbRef.child(id).update({ img: imgUrl });
+                if (imgUrl) dbRef.child(id).update({ img: imgUrl });
                 input.value = "";
             };
             input.click();
@@ -490,13 +495,10 @@
             el.classList.toggle('open');
         }
 
-        // --- 儲存現場（改成 Storage 上傳） ---
+        // --- 儲存現場 ---
         async function saveData() {
             const file = document.getElementById('pImg').files[0];
-            let imgUrl = "";
-            if (file) {
-                imgUrl = await uploadImageAndGetUrl(file, 'buy');
-            }
+            const imgUrl = await uploadImageAndGetUrl(file, 'buy');
 
             const isTaxFreeBuy = document.getElementById('buyIsTaxFree').value === 'true';
             const buyTaxRate = document.getElementById('buyTaxRate').value || "10";
@@ -527,13 +529,10 @@
             showPage('home');
         }
 
-        // --- 儲存預購（改成 Storage 上傳） ---
+        // --- 儲存預購 ---
         async function savePreOrder() {
             const file = document.getElementById('preImg').files[0];
-            let imgUrl = "";
-            if (file) {
-                imgUrl = await uploadImageAndGetUrl(file, 'preorder');
-            }
+            const imgUrl = await uploadImageAndGetUrl(file, 'preorder');
             
             const isTaxFree = document.getElementById('preIsTaxFree').value === 'true';
             const taxRateVal = document.getElementById('preTaxRate').value || "10";
