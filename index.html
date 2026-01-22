@@ -10,7 +10,7 @@
     <style>
         /* --- 核心風格定義 --- */
         :root { 
-            /* 原本紅色 primary 改成更有質感的霧藍灰 */
+            /* 主色：霧藍灰（不再紅） */
             --primary: #3D5A80; 
             --bg: #fffafb; 
             --card-bg: #ffffff; 
@@ -19,7 +19,7 @@
             --shadow: 0 8px 30px rgba(0,0,0,0.04);
             --green: #2a9d8f;
 
-            /* 新增：淡藍點綴（取代粉紅系） */
+            /* 淡藍點綴 */
             --soft: #eef4ff;
             --soft-border: #dbeafe;
         }
@@ -47,9 +47,7 @@
         }
         .main-btn:active { transform: scale(0.95); }
 
-        /* 原本新增按鈕固定紅色 → 改跟主色一致 */
         .btn-add { background: var(--primary); grid-column: span 2; aspect-ratio: auto; height: 110px; font-size: 22px; }
-
         .btn-list { background: #457b9d; }
         .btn-pre { background: #2a9d8f; }
         .btn-cust { background: #2b2d42; grid-column: span 2; aspect-ratio: auto; height: 80px; }
@@ -142,7 +140,7 @@
             padding: 2px 4px;
         }
 
-        /* 可編輯文字：改為主色（不再紅） */
+        /* 可編輯文字：主色（不再紅） */
         .editable-field { border-bottom: 1px dashed var(--primary); cursor: pointer; color: var(--primary); font-weight: 800; }
 
         .price-grid {
@@ -177,9 +175,7 @@
             border: 1px solid #f0f0f0;
         }
 
-        /* 原本粉紅強調 → 改成淡藍系 */
         .chip-strong { background: var(--soft); color: var(--primary); border: 1px solid var(--soft-border); }
-
         .chip-green { background:#e9f5f3; color:#2a9d8f; border:1px solid #d8efe9; }
 
         .tax-row {
@@ -326,6 +322,9 @@
             <div class="form-group"><label>📷 照片</label><input type="file" id="preImg" accept="image/*"></div>
             <div class="form-group"><label>📦 品名</label><input type="text" id="preName" placeholder="名稱"></div>
             <div class="form-group"><label>👤 顧客名</label><input type="text" id="preCust" placeholder="客名"></div>
+
+            <!-- 新增：預購採買地點 -->
+            <div class="form-group"><label>📍 採買地點</label><input type="text" id="preLoc" placeholder="地點"></div>
             
             <div class="form-group">
                 <label>🏷️ 退稅設定</label>
@@ -354,7 +353,6 @@
 
             <div style="display:flex; gap:12px;">
                 <div class="form-group" style="flex:1"><label>🔢 數量</label><input type="number" id="preQty" value="1"></div>
-
                 <!-- 售價：台幣 -->
                 <div class="form-group" style="flex:1"><label>💰 售價 (NT$)</label><input type="number" id="preSellPrice" placeholder="0"></div>
             </div>
@@ -388,7 +386,7 @@
             window.scrollTo(0,0);
         }
 
-        // --- 金額/數量工具：更穩健，避免總額只算到一筆 ---
+        // --- 金額/數量工具 ---
         function toNum(v) {
             if (v === null || v === undefined) return 0;
             const s = String(v).replace(/,/g, '').trim();
@@ -509,6 +507,7 @@
                 img: base64, 
                 time: new Date().toLocaleString()
             });
+
             ['pName','pPriceTax','pPriceSell','pLoc','pCustomer','pImg','pQty','buyTaxRate','buyTaxFreePrice','pRayCard'].forEach(id=> {
                 let el = document.getElementById(id); 
                 if(el) el.value = (id === 'pQty' ? '1' : '');
@@ -535,6 +534,7 @@
             preRef.push({
                 name: document.getElementById('preName').value || "未命名", 
                 customer: document.getElementById('preCust').value || "未填",
+                loc: document.getElementById('preLoc').value || "未填",
                 qty: document.getElementById('preQty').value || "1",
                 sellPrice: document.getElementById('preSellPrice').value || "0",
                 isTaxFree: isTaxFree,
@@ -545,10 +545,12 @@
                 img: base64, 
                 time: new Date().toLocaleString()
             });
-            ['preName','preCust','preTaxPrice','preSellPrice','preImg','preQty','preTaxRate','preTaxFreePrice'].forEach(id=> {
+
+            ['preName','preCust','preLoc','preTaxPrice','preSellPrice','preImg','preQty','preTaxRate','preTaxFreePrice'].forEach(id=> {
                 let el = document.getElementById(id); 
                 if(el) el.value = (id === 'preQty' ? '1' : '');
             });
+
             togglePreTax(false);
         }
 
@@ -687,7 +689,7 @@
 
             const preArr = Object.entries(rawPre).map(([id, val]) => ({ id, ...val })).reverse();
 
-            // 預購清單：主畫面只秀 品名 + 是否購買開關，其餘在詳情
+            // 預購清單：主畫面只秀 品名 + 未購買/已買到；並在未購買下面顯示採買地點（不折疊）
             document.getElementById('preOrderList').innerHTML = preArr.map(i => `
                 <div class="item-row">
                     <div onclick="triggerImgEdit('pre', '${i.id}')">
@@ -701,13 +703,23 @@
                                 <div class="item-title">
                                     <span class="editable-field" onclick="editPreInList('${i.id}','name','${i.name}')">${i.name}</span>
                                 </div>
+
+                                <!-- 狀態開關：移到品名下方，且「缺貨中」改「未購買」 -->
+                                <div style="margin-top:6px;">
+                                    <button class="chip ${i.isBought ? 'chip-green' : ''}" 
+                                            style="font-size:11px;padding:6px 10px;"
+                                            onclick="preRef.child('${i.id}').update({isBought: ${!i.isBought}})">
+                                        ${i.isBought ? '● 已買到' : '○ 未購買'}
+                                    </button>
+                                </div>
+
+                                <!-- 採買地點：固定顯示，不折疊；標示在未購買下面（此區塊永遠可見） -->
+                                <div style="margin-top:8px; font-size:12px; color:var(--text-sub);">
+                                    📍 <span class="editable-field" onclick="editPreInList('${i.id}','loc','${i.loc || ''}')">${i.loc || '未填'}</span>
+                                </div>
                             </div>
+
                             <div class="item-actions">
-                                <button class="chip ${i.isBought ? 'chip-green' : ''}" 
-                                        style="font-size:11px;padding:6px 10px;"
-                                        onclick="preRef.child('${i.id}').update({isBought: ${!i.isBought}})">
-                                    ${i.isBought ? '● 已買到' : '○ 缺貨中'}
-                                </button>
                                 <button class="item-del" onclick="if(confirm('刪除？')) preRef.child('${i.id}').remove()">✕</button>
                                 <button class="detail-toggle" onclick="toggleDetail('pre','${i.id}')">詳情 ▾</button>
                             </div>
@@ -763,14 +775,12 @@
             });
 
             document.getElementById('customerList').innerHTML = Object.keys(groups).map(c => {
-                /* 現場：售價（NT$） * qty */
                 const bTotal = groups[c].buy.reduce((s, n) => {
                     const price = toNum(n.priceSell);
                     const qty = toInt(n.qty, 1);
                     return s + (price * qty);
                 }, 0);
 
-                /* 預購：只有已買到才算應收（NT$） * qty */
                 const pTotal = groups[c].pre.reduce((s, n) => {
                     if(!n.isBought) return s;
                     const price = toNum(n.sellPrice);
@@ -794,7 +804,7 @@
                     <div class="summary-item">
                         <img src="${p.img || ''}" class="summary-img">
                         <div class="summary-text">
-                            <div>【預購】${p.isBought ? '[已買]' : '[缺貨]'} ${p.name} (x${p.qty || 1})</div>
+                            <div>【預購】${p.isBought ? '[已買]' : '[未購買]'} ${p.name} (x${p.qty || 1})</div>
                             <div class="summary-sub">售價 NT$${p.sellPrice || 0}</div>
                         </div>
                     </div>
@@ -825,11 +835,12 @@
                 "類型": "預購", 
                 "顧客": i.customer, 
                 "品名": i.name, 
+                "採買地點": i.loc,
                 "數量": i.qty, 
                 "售價(NT$)": i.sellPrice, 
                 "含稅標價(¥)": i.taxIncludedPrice, 
                 "退稅價(¥)": i.isTaxFree ? i.taxFreePrice : "無", 
-                "狀態": i.isBought ? "已買" : "缺" 
+                "狀態": i.isBought ? "已買" : "未購買" 
             }));
             const ws = XLSX.utils.json_to_sheet([...d, ...p]);
             const wb = XLSX.utils.book_new();
