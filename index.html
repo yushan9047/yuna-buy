@@ -110,7 +110,7 @@
                 <input type="number" id="pPriceTax" placeholder="0">
             </div>
 
-            <!-- 現場採購退稅設定（取代原本的未稅欄位） -->
+            <!-- 現場採購退稅設定 -->
             <div class="form-group">
                 <label>🏷️ 退稅設定</label>
                 <div class="btn-group">
@@ -243,7 +243,7 @@
             window.scrollTo(0,0);
         }
 
-        // --- 預購退稅切換 ---
+        // --- 預購退稅切換（新增預購表單） ---
         function togglePreTax(isTaxFree) {
             document.getElementById('preIsTaxFree').value = isTaxFree;
             document.getElementById('taxBtnYes').classList.toggle('active', isTaxFree);
@@ -256,7 +256,7 @@
             if (preTaxFreeGroup) preTaxFreeGroup.style.display = isTaxFree ? 'block' : 'none';
         }
 
-        // --- 現場退稅切換 ---
+        // --- 現場退稅切換（新增現場表單） ---
         function toggleBuyTax(isTaxFree) {
             document.getElementById('buyIsTaxFree').value = isTaxFree;
             document.getElementById('buyTaxBtnYes').classList.toggle('active', isTaxFree);
@@ -421,6 +421,7 @@
             preRef.child(id).update(up);
         }
 
+        // 清單裡切換「預購品」的退稅狀態
         function togglePreTaxItem(id) {
             const item = rawPre[id];
             if (!item) return;
@@ -432,9 +433,11 @@
                 if (!item.taxRate) up.taxRate = "10";
                 if (!item.taxFreePrice) up.taxFreePrice = "0";
             }
+            // 若要關閉時順便清空，也可以在這裡補上 up.taxRate / up.taxFreePrice
             preRef.child(id).update(up);
         }
 
+        // 清單裡切換「現場品」的退稅狀態
         function toggleBuyTaxItem(id) {
             const item = rawData[id];
             if (!item) return;
@@ -477,7 +480,15 @@
                             <span class="tag" onclick="editInList('${i.id}','buyer','${i.buyer}')">🧤 ${i.buyer}</span>
                             ${
                                 i.isTaxFree
-                                ? `<span class="tag" style="background:#e9f5f3; color:#2a9d8f;" onclick="editInList('${i.id}','taxRate','${i.taxRate || ''}')">✨ 退稅價 ¥${i.taxFreePrice || 0} (${i.taxRate || ''}%)</span>`
+                                ? `
+                                    <span class="tag" onclick="toggleBuyTaxItem('${i.id}')">有退稅（點我關閉）</span>
+                                    <span class="tag" style="background:#e9f5f3; color:#2a9d8f;" onclick="editInList('${i.id}','taxFreePrice','${i.taxFreePrice || ''}')">
+                                        退稅價 ¥${i.taxFreePrice || 0}
+                                    </span>
+                                    <span class="tag" onclick="editInList('${i.id}','taxRate','${i.taxRate || ''}')">
+                                        稅率 ${i.taxRate || ''}%
+                                    </span>
+                                  `
                                 : `<span class="tag" onclick="toggleBuyTaxItem('${i.id}')">無退稅（點我開啟）</span>`
                             }
                         </div>
@@ -487,9 +498,12 @@
             `).join('');
 
             const preArr = Object.entries(rawPre).map(([id, val]) => ({ id, ...val })).reverse();
+
             document.getElementById('preOrderList').innerHTML = preArr.map(i => `
                 <div class="item-row" style="border-left: 6px solid ${i.isBought ? '#2ecc71' : '#eee'}">
-                    <div onclick="triggerImgEdit('pre', '${i.id}')"><img src="${i.img || ''}" class="item-img"></div>
+                    <div onclick="triggerImgEdit('pre', '${i.id}')">
+                        <img src="${i.img || ''}" class="item-img">
+                    </div>
                     <div class="item-info">
                         <div style="font-weight:bold">
                             <span class="editable-field" onclick="editPreInList('${i.id}','name','${i.name}')">${i.name}</span>
@@ -507,15 +521,29 @@
                         <div class="tag-row">
                             <span class="tag tag-active" onclick="editPreInList('${i.id}','qty','${i.qty}')">x ${i.qty}</span>
                             <span class="tag tag-active" onclick="editPreInList('${i.id}','customer','${i.customer}')">👤 ${i.customer}</span>
+
                             ${
                                 i.isTaxFree
-                                ? `<span class="tag" style="background:#e9f5f3; color:#2a9d8f;" onclick="editPreInList('${i.id}','taxRate','${i.taxRate || ''}')">✨ 退稅價 ¥${i.taxFreePrice || 0} (${i.taxRate || ''}%)</span>`
+                                ? `
+                                    <span class="tag" onclick="togglePreTaxItem('${i.id}')">有退稅（點我關閉）</span>
+                                    <span class="tag" style="background:#e9f5f3; color:#2a9d8f;" onclick="editPreInList('${i.id}','taxFreePrice','${i.taxFreePrice || ''}')">
+                                        退稅價 ¥${i.taxFreePrice || 0}
+                                    </span>
+                                    <span class="tag" onclick="editPreInList('${i.id}','taxRate','${i.taxRate || ''}')">
+                                        稅率 ${i.taxRate || ''}%
+                                    </span>
+                                  `
                                 : `<span class="tag" onclick="togglePreTaxItem('${i.id}')">無退稅（點我開啟）</span>`
                             }
-                            <span class="tag ${i.isBought ? 'tag-active' : ''}" onclick="preRef.child('${i.id}').update({isBought: ${!i.isBought}})">${i.isBought ? '● 已買到' : '○ 缺貨中'}</span>
+
+                            <span class="tag ${i.isBought ? 'tag-active' : ''}" 
+                                  onclick="preRef.child('${i.id}').update({isBought: ${!i.isBought}})">
+                                ${i.isBought ? '● 已買到' : '○ 缺貨中'}
+                            </span>
                         </div>
                     </div>
-                    <button onclick="if(confirm('刪除？')) preRef.child('${i.id}').remove()" style="border:none;background:none;color:#ddd;">✕</button>
+                    <button onclick="if(confirm('刪除？')) preRef.child('${i.id}').remove()" 
+                            style="border:none;background:none;color:#ddd;">✕</button>
                 </div>
             `).join('');
 
@@ -533,8 +561,8 @@
                 groups[i.customer].pre.push(i); 
             });
             document.getElementById('customerList').innerHTML = Object.keys(groups).map(c => {
-                const bTotal = groups[c].buy.reduce((s, n) => s + (parseFloat(n.priceSell)*(parseInt(n.qty)||1)), 0);
-                const pTotal = groups[c].pre.reduce((s, n) => s + (n.isBought ? (parseFloat(n.sellPrice)*(parseInt(n.qty)||1)) : 0), 0);
+                const bTotal = groups[c].buy.reduce((s, n) => s + (parseFloat(n.priceSell || 0)*(parseInt(n.qty)||1)), 0);
+                const pTotal = groups[c].pre.reduce((s, n) => s + (n.isBought ? (parseFloat(n.sellPrice || 0)*(parseInt(n.qty)||1)) : 0), 0);
                 return `<div class="card">
                     <div style="font-weight:bold; display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; padding-bottom:10px; margin-bottom:10px;">
                         <span>👤 ${c}</span>
