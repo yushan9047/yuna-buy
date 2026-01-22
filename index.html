@@ -76,6 +76,13 @@
         .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; justify-content:center; align-items:flex-end; }
         .modal-content { background:white; padding:30px; border-radius:35px 35px 0 0; width:100%; max-height: 80vh; overflow-y: auto; }
         .modal-btn { display:block; width:100%; padding:18px; margin:10px 0; border:1px solid #f0f0f0; border-radius:50px; font-size:16px; font-weight:bold; background:#fff; text-align: center; cursor: pointer; }
+
+        /* 對帳統計小圖樣式 */
+        .summary-list { margin-top: 5px; }
+        .summary-item { display:flex; gap:10px; margin-bottom:8px; align-items:center; }
+        .summary-img { width:46px; height:46px; object-fit:cover; border-radius:14px; background:#f5f5f5; border:1px solid #f0f0f0; flex-shrink:0; }
+        .summary-text { font-size:12px; color:#444; line-height:1.4; }
+        .summary-sub { font-size:11px; color:var(--text-sub); }
     </style>
 </head>
 <body>
@@ -566,17 +573,38 @@
                 if(!groups[i.customer]) groups[i.customer] = { buy: [], pre: [] }; 
                 groups[i.customer].pre.push(i); 
             });
+
             document.getElementById('customerList').innerHTML = Object.keys(groups).map(c => {
                 const bTotal = groups[c].buy.reduce((s, n) => s + (parseFloat(n.priceSell || 0)*(parseInt(n.qty)||1)), 0);
                 const pTotal = groups[c].pre.reduce((s, n) => s + (n.isBought ? (parseFloat(n.sellPrice || 0)*(parseInt(n.qty)||1)) : 0), 0);
+
+                const buyLines = groups[c].buy.map(p => `
+                    <div class="summary-item">
+                        <img src="${p.img || ''}" class="summary-img">
+                        <div class="summary-text">
+                            <div>【現場】${p.name} (x${p.qty})</div>
+                            <div class="summary-sub">售價 ¥${p.priceSell}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                const preLines = groups[c].pre.map(p => `
+                    <div class="summary-item">
+                        <img src="${p.img || ''}" class="summary-img">
+                        <div class="summary-text">
+                            <div>【預購】${p.isBought ? '[已買]' : '[缺貨]'} ${p.name} (x${p.qty})</div>
+                            <div class="summary-sub">售價 ¥${p.sellPrice}</div>
+                        </div>
+                    </div>
+                `).join('');
+
                 return `<div class="card">
                     <div style="font-weight:bold; display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; padding-bottom:10px; margin-bottom:10px;">
                         <span>👤 ${c}</span>
                         <span style="color:var(--primary)">總應收 ¥${bTotal + pTotal}</span>
                     </div>
-                    <div style="font-size:12px; line-height:1.8; color:#666;">
-                        ${groups[c].buy.map(p => `• ${p.name} (x${p.qty}) - ¥${p.priceSell}`).join('<br>')}
-                        ${groups[c].pre.map(p => `• ${p.isBought ? '[已買]' : '[缺貨]'} ${p.name} (x${p.qty}) - ¥${p.sellPrice}`).join('<br>')}
+                    <div class="summary-list">
+                        ${buyLines}${preLines}
                     </div>
                 </div>`;
             }).join('');
