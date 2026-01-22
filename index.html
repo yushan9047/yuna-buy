@@ -634,12 +634,13 @@
                                 <div class="item-title">
                                     <span class="editable-field" onclick="editInList('${i.id}','name','${i.name}')">${i.name}</span>
                                 </div>
+
+                                <!-- ✅ 這裡已改：成本價錢「成本 ¥ ${i.priceTax}」同一段同一行 -->
                                 <div class="item-main-meta">
                                     👤 
                                     <span class="editable-field" onclick="editInList('${i.id}','customer','${i.customer}')">${i.customer}</span>
                                     ｜
-                                    成本 ¥ 
-                                    <span class="editable-field" onclick="editInList('${i.id}','priceTax','${i.priceTax}')">${i.priceTax}</span>
+                                    <span class="editable-field" onclick="editInList('${i.id}','priceTax','${i.priceTax}')">成本 ¥ ${i.priceTax}</span>
                                 </div>
                             </div>
                             <div class="item-actions">
