@@ -104,18 +104,13 @@
         <div class="card">
             <div class="form-group"><label>📷 商品照片</label><input type="file" id="pImg" accept="image/*"></div>
             <div class="form-group"><label>📦 品名</label><input type="text" id="pName" placeholder="請輸入品名"></div>
-            <div style="display:flex; gap:12px;">
-                <div class="form-group" style="flex:1">
-                    <label>💴 未稅價</label>
-                    <input type="number" id="pPriceN" placeholder="0">
-                </div>
-                <div class="form-group" style="flex:1">
-                    <label>💰 含稅成本</label>
-                    <input type="number" id="pPriceTax" placeholder="0">
-                </div>
+
+            <div class="form-group">
+                <label>💰 含稅成本</label>
+                <input type="number" id="pPriceTax" placeholder="0">
             </div>
 
-            <!-- 現場採購退稅設定：移到含稅成本下面 -->
+            <!-- 現場採購退稅設定（取代原本的未稅欄位） -->
             <div class="form-group">
                 <label>🏷️ 退稅設定</label>
                 <div class="btn-group">
@@ -337,7 +332,6 @@
 
             dataRef.push({
                 name: document.getElementById('pName').value || "未命名", 
-                priceN: document.getElementById('pPriceN').value || "0",
                 priceTax: document.getElementById('pPriceTax').value || "0", 
                 priceSell: document.getElementById('pPriceSell').value || "0",
                 qty: document.getElementById('pQty').value || "1", 
@@ -351,7 +345,7 @@
                 img: base64, 
                 time: new Date().toLocaleString()
             });
-            ['pName','pPriceN','pPriceTax','pPriceSell','pLoc','pCustomer','pImg','pQty','buyTaxRate','buyTaxFreePrice'].forEach(id=> {
+            ['pName','pPriceTax','pPriceSell','pLoc','pCustomer','pImg','pQty','buyTaxRate','buyTaxFreePrice'].forEach(id=> {
                 let el = document.getElementById(id); 
                 if(el) el.value = (id === 'pQty' ? '1' : '');
             });
@@ -587,7 +581,7 @@
             }
         }
 
-        // 預設載入時，把退稅欄位都關閉
+        // 初始時把兩邊退稅都關掉
         document.addEventListener('DOMContentLoaded', () => {
             togglePreTax(false);
             toggleBuyTax(false);
