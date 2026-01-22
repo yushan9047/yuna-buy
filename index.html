@@ -6,6 +6,8 @@
     <title>Yuna 代購管理系統 v32</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <!-- ✅ 新增：Firebase Storage -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
         /* --- 核心風格定義 --- */
@@ -140,7 +142,7 @@
             padding: 2px 4px;
         }
 
-        /* 可編輯文字：主色（不再紅） */
+        /* 可編輯文字：主色 */
         .editable-field { border-bottom: 1px dashed var(--primary); cursor: pointer; color: var(--primary); font-weight: 800; }
 
         .price-grid {
@@ -323,7 +325,7 @@
             <div class="form-group"><label>📦 品名</label><input type="text" id="preName" placeholder="名稱"></div>
             <div class="form-group"><label>👤 顧客名</label><input type="text" id="preCust" placeholder="客名"></div>
 
-            <!-- 新增：預購採買地點 -->
+            <!-- 預購採買地點 -->
             <div class="form-group"><label>📍 採買地點</label><input type="text" id="preLoc" placeholder="地點"></div>
             
             <div class="form-group">
@@ -374,6 +376,8 @@
         const db = firebase.database();
         const dataRef = db.ref('yuna_v25_data'); 
         const preRef = db.ref('yuna_v25_preorder'); 
+        // ✅ 新增：Storage
+        const storage = firebase.storage();
 
         let rawData = {}; 
         let rawPre = {}; 
@@ -454,18 +458,26 @@
             activePickerCallback = null; 
         }
 
+        // ✅ 共用：上傳圖片到 Storage 並回傳 URL
+        async function uploadImageAndGetUrl(file, folder) {
+            if (!file) return "";
+            const storageRef = storage.ref();
+            const fileRef = storageRef.child(`${folder}/${Date.now()}_${file.name}`);
+            await fileRef.put(file);
+            const url = await fileRef.getDownloadURL();
+            return url;
+        }
+
+        // ✅ 改成使用 Storage 的圖片修改
         function triggerImgEdit(refType, id) {
             const input = document.getElementById('editImgInput');
             input.onchange = async (e) => {
                 const file = e.target.files[0];
                 if(!file) return;
-                const base64 = await new Promise(res => {
-                    const reader = new FileReader();
-                    reader.onload = ev => res(ev.target.result);
-                    reader.readAsDataURL(file);
-                });
-                const ref = (refType === 'buy') ? dataRef : preRef;
-                ref.child(id).update({ img: base64 });
+                const folder = refType === 'buy' ? 'buy' : 'preorder';
+                const imgUrl = await uploadImageAndGetUrl(file, folder);
+                const dbRef = (refType === 'buy') ? dataRef : preRef;
+                dbRef.child(id).update({ img: imgUrl });
                 input.value = "";
             };
             input.click();
@@ -478,15 +490,13 @@
             el.classList.toggle('open');
         }
 
-        // --- 儲存現場 ---
+        // --- 儲存現場（改成 Storage 上傳） ---
         async function saveData() {
             const file = document.getElementById('pImg').files[0];
-            let base64 = "";
-            if(file) base64 = await new Promise(res => { 
-                const reader = new FileReader(); 
-                reader.onload = e => res(e.target.result); 
-                reader.readAsDataURL(file); 
-            });
+            let imgUrl = "";
+            if (file) {
+                imgUrl = await uploadImageAndGetUrl(file, 'buy');
+            }
 
             const isTaxFreeBuy = document.getElementById('buyIsTaxFree').value === 'true';
             const buyTaxRate = document.getElementById('buyTaxRate').value || "10";
@@ -504,7 +514,7 @@
                 isTaxFree: isTaxFreeBuy,
                 taxRate: buyTaxRate,
                 taxFreePrice: buyTaxFreePrice,
-                img: base64, 
+                img: imgUrl, 
                 time: new Date().toLocaleString()
             });
 
@@ -517,15 +527,13 @@
             showPage('home');
         }
 
-        // --- 儲存預購 ---
+        // --- 儲存預購（改成 Storage 上傳） ---
         async function savePreOrder() {
             const file = document.getElementById('preImg').files[0];
-            let base64 = "";
-            if(file) base64 = await new Promise(res => { 
-                const reader = new FileReader(); 
-                reader.onload = e => res(e.target.result); 
-                reader.readAsDataURL(file); 
-            });
+            let imgUrl = "";
+            if (file) {
+                imgUrl = await uploadImageAndGetUrl(file, 'preorder');
+            }
             
             const isTaxFree = document.getElementById('preIsTaxFree').value === 'true';
             const taxRateVal = document.getElementById('preTaxRate').value || "10";
@@ -542,7 +550,7 @@
                 taxIncludedPrice: document.getElementById('preTaxPrice').value || "0",
                 taxFreePrice: taxFreeVal,
                 isBought: false, 
-                img: base64, 
+                img: imgUrl, 
                 time: new Date().toLocaleString()
             });
 
@@ -635,7 +643,7 @@
                                     <span class="editable-field" onclick="editInList('${i.id}','name','${i.name}')">${i.name}</span>
                                 </div>
 
-                                <!-- ✅ 成本價錢同一行（同一段） -->
+                                <!-- 成本價錢 & 顧客同一行 -->
                                 <div class="item-main-meta">
                                     👤 
                                     <span class="editable-field" onclick="editInList('${i.id}','customer','${i.customer}')">${i.customer}</span>
@@ -649,7 +657,7 @@
                             </div>
                         </div>
 
-                        <!-- ✅ 數量移出折疊：永遠顯示 -->
+                        <!-- 數量不折疊：永遠顯示 -->
                         <div class="chip-row" style="margin-top:10px;">
                             <span class="chip chip-strong" onclick="editInList('${i.id}','qty','${i.qty}')">x ${i.qty || 1}</span>
                         </div>
@@ -709,7 +717,7 @@
                                     <span class="editable-field" onclick="editPreInList('${i.id}','name','${i.name}')">${i.name}</span>
                                 </div>
 
-                                <!-- 狀態開關：移到品名下方，且「缺貨中」改「未購買」 -->
+                                <!-- 狀態開關：品名下方 -->
                                 <div style="margin-top:6px;">
                                     <button class="chip ${i.isBought ? 'chip-green' : ''}" 
                                             style="font-size:11px;padding:6px 10px;"
@@ -718,12 +726,12 @@
                                     </button>
                                 </div>
 
-                                <!-- 採買地點：固定顯示，不折疊 -->
+                                <!-- 採買地點：固定顯示 -->
                                 <div style="margin-top:8px; font-size:12px; color:var(--text-sub);">
                                     📍 <span class="editable-field" onclick="editPreInList('${i.id}','loc','${i.loc || ''}')">${i.loc || '未填'}</span>
                                 </div>
 
-                                <!-- ✅ 數量移出折疊：永遠顯示 -->
+                                <!-- 數量不折疊 -->
                                 <div class="chip-row" style="margin-top:10px;">
                                     <span class="chip chip-strong" onclick="editPreInList('${i.id}','qty','${i.qty}')">x ${i.qty || 1}</span>
                                 </div>
