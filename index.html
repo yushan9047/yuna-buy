@@ -337,7 +337,7 @@
 
             <div style="display:flex; gap:12px;">
                 <div class="form-group" style="flex:1.5">
-                    <label>💴 含稅價(¥)</label>
+                    <label>💴 含稅價(標價) (¥)</label>
                     <input type="number" id="preTaxPrice" placeholder="0">
                 </div>
                 <div class="form-group" id="taxRateGroup" style="flex:1; display:none;">
@@ -620,7 +620,7 @@
         function renderLists() {
             const buyArr = Object.entries(rawData).map(([id, val]) => ({ id, ...val })).reverse();
 
-            // 採購明細：主畫面只秀 品名 + 成本價 + 顧客，其餘在詳情
+            // 採購明細：主畫面只秀 品名 + 成本價 + 顧客 + 數量(不折疊)，其餘在詳情
             document.getElementById('allList').innerHTML = buyArr.map(i => `
                 <div class="item-row">
                     <div onclick="triggerImgEdit('buy', '${i.id}')">
@@ -635,7 +635,7 @@
                                     <span class="editable-field" onclick="editInList('${i.id}','name','${i.name}')">${i.name}</span>
                                 </div>
 
-                                <!-- ✅ 這裡已改：成本價錢「成本 ¥ ${i.priceTax}」同一段同一行 -->
+                                <!-- ✅ 成本價錢同一行（同一段） -->
                                 <div class="item-main-meta">
                                     👤 
                                     <span class="editable-field" onclick="editInList('${i.id}','customer','${i.customer}')">${i.customer}</span>
@@ -647,6 +647,11 @@
                                 <button class="item-del" onclick="if(confirm('刪除？')) dataRef.child('${i.id}').remove()">✕</button>
                                 <button class="detail-toggle" onclick="toggleDetail('buy','${i.id}')">詳情 ▾</button>
                             </div>
+                        </div>
+
+                        <!-- ✅ 數量移出折疊：永遠顯示 -->
+                        <div class="chip-row" style="margin-top:10px;">
+                            <span class="chip chip-strong" onclick="editInList('${i.id}','qty','${i.qty}')">x ${i.qty || 1}</span>
                         </div>
 
                         <div id="buy-detail-${i.id}" class="item-detail">
@@ -662,7 +667,6 @@
                             </div>
 
                             <div class="chip-row">
-                                <span class="chip chip-strong" onclick="editInList('${i.id}','qty','${i.qty}')">x ${i.qty || 1}</span>
                                 <span class="chip" onclick="editInList('${i.id}','buyer','${i.buyer}')">🧤 ${i.buyer}</span>
                                 ${
                                     i.buyer === 'Ray'
@@ -690,7 +694,7 @@
 
             const preArr = Object.entries(rawPre).map(([id, val]) => ({ id, ...val })).reverse();
 
-            // 預購清單：主畫面只秀 品名 + 未購買/已買到；並在未購買下面顯示採買地點（不折疊）
+            // 預購清單：主畫面只秀 品名 + 未購買/已買到 + 地點 + 數量(不折疊)，其餘折疊
             document.getElementById('preOrderList').innerHTML = preArr.map(i => `
                 <div class="item-row">
                     <div onclick="triggerImgEdit('pre', '${i.id}')">
@@ -714,9 +718,14 @@
                                     </button>
                                 </div>
 
-                                <!-- 採買地點：固定顯示，不折疊；標示在未購買下面（此區塊永遠可見） -->
+                                <!-- 採買地點：固定顯示，不折疊 -->
                                 <div style="margin-top:8px; font-size:12px; color:var(--text-sub);">
                                     📍 <span class="editable-field" onclick="editPreInList('${i.id}','loc','${i.loc || ''}')">${i.loc || '未填'}</span>
+                                </div>
+
+                                <!-- ✅ 數量移出折疊：永遠顯示 -->
+                                <div class="chip-row" style="margin-top:10px;">
+                                    <span class="chip chip-strong" onclick="editPreInList('${i.id}','qty','${i.qty}')">x ${i.qty || 1}</span>
                                 </div>
                             </div>
 
@@ -729,7 +738,7 @@
                         <div id="pre-detail-${i.id}" class="item-detail">
                             <div class="price-grid">
                                 <div class="price-tag">
-                                    <span class="price-label">含稅價(¥)</span>
+                                    <span class="price-label">含稅標價 (¥)</span>
                                     ¥ <span class="editable-field" onclick="editPreInList('${i.id}','taxIncludedPrice','${i.taxIncludedPrice}')">${i.taxIncludedPrice}</span>
                                 </div>
                                 <div class="price-tag" style="background:var(--soft);border:1px solid var(--soft-border);">
@@ -739,7 +748,6 @@
                             </div>
 
                             <div class="chip-row">
-                                <span class="chip chip-strong" onclick="editPreInList('${i.id}','qty','${i.qty}')">x ${i.qty}</span>
                                 <span class="chip chip-strong" onclick="editPreInList('${i.id}','customer','${i.customer}')">👤 ${i.customer}</span>
                             </div>
 
@@ -865,4 +873,3 @@
     </script>
 </body>
 </html>
-
