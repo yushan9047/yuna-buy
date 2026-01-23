@@ -4,11 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Yuna 代購管理系統 v32</title>
+
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-    <!-- Firebase Storage -->
+
+    <!-- ✅ 移除 Firebase Storage（你不升級、不綁卡就用不了）
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+    -->
+
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
     <style>
         /* --- 核心風格定義 --- */
         :root { 
@@ -376,7 +381,9 @@
         const db = firebase.database();
         const dataRef = db.ref('yuna_v25_data'); 
         const preRef = db.ref('yuna_v25_preorder'); 
-        const storage = firebase.storage();
+
+        // ✅ 移除 Firebase Storage
+        // const storage = firebase.storage();
 
         let rawData = {}; 
         let rawPre = {}; 
@@ -457,23 +464,38 @@
             activePickerCallback = null; 
         }
 
-        // ✅ 上傳圖片到 Storage，失敗時不中斷流程
+        // ✅ 改成 Cloudinary Unsigned Upload（保留原本函式簽名，不動其他呼叫）
         async function uploadImageAndGetUrl(file, folder) {
             if (!file) return "";
             try {
-                const storageRef = storage.ref();
-                const fileRef = storageRef.child(`${folder}/${Date.now()}_${file.name}`);
-                await fileRef.put(file);
-                const url = await fileRef.getDownloadURL();
-                return url;
+                const CLOUD_NAME = "dhgzkdopf";
+                const UPLOAD_PRESET = "yuna_unsigned";
+                const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("upload_preset", UPLOAD_PRESET);
+
+                // （選擇性）你若想分資料夾，可打開下面兩行：
+                // if (folder) formData.append("folder", `yuna-products/${folder}`);
+
+                const res = await fetch(url, { method: "POST", body: formData });
+                const data = await res.json();
+
+                if (!data.secure_url) {
+                    console.error("Cloudinary response:", data);
+                    alert("圖片上傳失敗（Cloudinary 未回傳網址），請檢查 upload preset 是否為 Unsigned。");
+                    return "";
+                }
+                return data.secure_url;
             } catch (e) {
                 console.error("圖片上傳失敗：", e);
-                alert("圖片上傳失敗，但商品資訊會照常儲存。\n請稍後再試，或到 Firebase Storage 檢查權限規則。");
+                alert("圖片上傳失敗，但商品資訊會照常儲存。\n請稍後再試。");
                 return "";
             }
         }
 
-        // 使用 Storage 的圖片修改
+        // 使用（Cloudinary）圖片修改：原本邏輯不動
         function triggerImgEdit(refType, id) {
             const input = document.getElementById('editImgInput');
             input.onchange = async (e) => {
