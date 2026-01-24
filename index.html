@@ -293,11 +293,13 @@
                     <button class="btn-opt" onclick="setBuyer('Cupid', this)">Cupid</button>
                 </div>
                 <input type="hidden" id="pBuyer">
+                <!-- ✅ 只改這裡：新增 qp卡 -->
                 <div id="rayCardOptions" style="display:none; background:var(--soft); padding:15px; border-radius:25px; margin-top:15px; border:1px solid var(--soft-border);">
                     <label style="color:var(--primary);">💳 選擇卡片</label>
-                    <div style="display:flex; gap:8px;">
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
                         <button class="btn-opt" onclick="setRayCard('na爸卡', this)" style="padding:10px">na爸卡</button>
                         <button class="btn-opt" onclick="setRayCard('ray卡', this)" style="padding:10px">ray卡</button>
+                        <button class="btn-opt" onclick="setRayCard('qp卡', this)" style="padding:10px">qp卡</button>
                     </div>
                     <input type="hidden" id="pRayCard">
                 </div>
@@ -596,7 +598,8 @@
                 }); 
             }
             else if(field === 'cardInfo') { 
-                openPicker("選擇卡片", ['na爸卡', 'ray卡'], (val) => { dataRef.child(id).update({cardInfo: val}); }); 
+                // ✅ 只改這裡：新增 qp卡
+                openPicker("選擇卡片", ['na爸卡', 'ray卡', 'qp卡'], (val) => { dataRef.child(id).update({cardInfo: val}); }); 
             }
             else { 
                 let v = prompt(`修改 ${field}:`, current); 
@@ -800,81 +803,80 @@
         }
 
         function renderSummary(buyArr, preArr) {
-    const groups = {};
+            const groups = {};
 
-    // 依顧客分組
-    buyArr.forEach(i => { 
-        const key = (i.customer || "未填").trim();
-        if (!groups[key]) groups[key] = { buy: [], pre: [] }; 
-        groups[key].buy.push(i); 
-    });
-    preArr.forEach(i => { 
-        const key = (i.customer || "未填").trim();
-        if (!groups[key]) groups[key] = { buy: [], pre: [] }; 
-        groups[key].pre.push(i); 
-    });
+            // 依顧客分組
+            buyArr.forEach(i => { 
+                const key = (i.customer || "未填").trim();
+                if (!groups[key]) groups[key] = { buy: [], pre: [] }; 
+                groups[key].buy.push(i); 
+            });
+            preArr.forEach(i => { 
+                const key = (i.customer || "未填").trim();
+                if (!groups[key]) groups[key] = { buy: [], pre: [] }; 
+                groups[key].pre.push(i); 
+            });
 
-    // 生成畫面
-    document.getElementById('customerList').innerHTML = Object.keys(groups).map(c => {
-        const g = groups[c];
+            // 生成畫面
+            document.getElementById('customerList').innerHTML = Object.keys(groups).map(c => {
+                const g = groups[c];
 
-        // ✅ 現場：總應收 NT$
-        const bTotal = g.buy.reduce((s, n) => {
-            const price = Number(n.priceSell ?? 0) || 0;
-            const qty   = Number(n.qty ?? 1)      || 1;
-            return s + price * qty;
-        }, 0);
+                // ✅ 現場：總應收 NT$
+                const bTotal = g.buy.reduce((s, n) => {
+                    const price = Number(n.priceSell ?? 0) || 0;
+                    const qty   = Number(n.qty ?? 1)      || 1;
+                    return s + price * qty;
+                }, 0);
 
-        // ✅ 預購：只算「已買到」的
-        const pTotal = g.pre.reduce((s, n) => {
-            if (!n.isBought) return s;
-            const price = Number(n.sellPrice ?? 0) || 0;
-            const qty   = Number(n.qty ?? 1)       || 1;
-            return s + price * qty;
-        }, 0);
+                // ✅ 預購：只算「已買到」的
+                const pTotal = g.pre.reduce((s, n) => {
+                    if (!n.isBought) return s;
+                    const price = Number(n.sellPrice ?? 0) || 0;
+                    const qty   = Number(n.qty ?? 1)       || 1;
+                    return s + price * qty;
+                }, 0);
 
-        const total = bTotal + pTotal;
+                const total = bTotal + pTotal;
 
-        // ✅ 每一筆現場品：台幣售價 + 日幣含稅成本
-        const buyLines = g.buy.map(p => `
-            <div class="summary-item">
-                <img src="${p.img || ''}" class="summary-img">
-                <div class="summary-text">
-                    <div>【現場】${p.name} (x${p.qty || 1})</div>
-                    <div class="summary-sub">
-                        售價 NT$${p.priceSell || 0} ／ 成本 ¥${p.priceTax || 0}
+                // ✅ 每一筆現場品：台幣售價 + 日幣含稅成本
+                const buyLines = g.buy.map(p => `
+                    <div class="summary-item">
+                        <img src="${p.img || ''}" class="summary-img">
+                        <div class="summary-text">
+                            <div>【現場】${p.name} (x${p.qty || 1})</div>
+                            <div class="summary-sub">
+                                售價 NT$${p.priceSell || 0} ／ 成本 ¥${p.priceTax || 0}
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        `).join('');
+                `).join('');
 
-        // ✅ 每一筆預購品：台幣售價 + 日幣含稅標價
-        const preLines = g.pre.map(p => `
-            <div class="summary-item">
-                <img src="${p.img || ''}" class="summary-img">
-                <div class="summary-text">
-                    <div>【預購】${p.isBought ? '[已買]' : '[未購買]'} ${p.name} (x${p.qty || 1})</div>
-                    <div class="summary-sub">
-                        售價 NT$${p.sellPrice || 0} ／ 成本 ¥${p.taxIncludedPrice || 0}
+                // ✅ 每一筆預購品：台幣售價 + 日幣含稅標價
+                const preLines = g.pre.map(p => `
+                    <div class="summary-item">
+                        <img src="${p.img || ''}" class="summary-img">
+                        <div class="summary-text">
+                            <div>【預購】${p.isBought ? '[已買]' : '[未購買]'} ${p.name} (x${p.qty || 1})</div>
+                            <div class="summary-sub">
+                                售價 NT$${p.sellPrice || 0} ／ 成本 ¥${p.taxIncludedPrice || 0}
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        `).join('');
+                `).join('');
 
-        return `
-            <div class="card">
-                <div style="font-weight:bold; display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; padding-bottom:10px; margin-bottom:10px;">
-                    <span>👤 ${c}</span>
-                    <span style="color:var(--primary)">總應收 NT$${total}</span>
-                </div>
-                <div class="summary-list">
-                    ${buyLines}${preLines}
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
+                return `
+                    <div class="card">
+                        <div style="font-weight:bold; display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; padding-bottom:10px; margin-bottom:10px;">
+                            <span>👤 ${c}</span>
+                            <span style="color:var(--primary)">總應收 NT$${total}</span>
+                        </div>
+                        <div class="summary-list">
+                            ${buyLines}${preLines}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
 
         function exportToExcel() {
             const d = Object.values(rawData).map(i => ({ 
@@ -918,5 +920,3 @@
     </script>
 </body>
 </html>
-
-
