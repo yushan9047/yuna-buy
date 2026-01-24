@@ -740,83 +740,110 @@
         function renderLists() {
             const buyArr = Object.entries(rawData).map(([id, val]) => ({ id, ...val })).reverse();
 
-            // 採購明細：主畫面只秀 品名 + 成本價 + 顧客 + 數量(不折疊)，其餘在詳情
-            document.getElementById('allList').innerHTML = buyArr.map(i => `
-                <div class="item-row">
-                    <div onclick="triggerImgEdit('buy', '${i.id}')">
-                        <img src="${i.img || ''}" class="item-img">
-                        <span style="font-size:10px;display:block;text-align:center;color:#cfcfcf;margin-top:6px;font-weight:800;">換圖</span>
-                    </div>
-
-                    <div class="item-info">
-                        <div class="item-main">
-                            <div class="item-main-text">
-                                <div class="item-title">
-                                    <span class="editable-field" onclick="editInList('${i.id}','name','${i.name}')">${i.name}</span>
-                                </div>
-
-                                <!-- 成本價錢 & 顧客同一行 -->
-                                <div class="item-main-meta">
-                                    👤 
-                                    <span class="editable-field" onclick="editInList('${i.id}','customer','${i.customer}')">${i.customer}</span>
-                                    ｜
-                                    <span class="editable-field" onclick="editInList('${i.id}','priceTax','${i.priceTax}')">成本 ¥ ${i.priceTax}</span>
-                                </div>
+        // 預購清單：主畫面只秀 品名 + 狀態 + 地點 + 數量，其餘折疊
+        document.getElementById('preOrderList').innerHTML = preArr.map(i => `
+            <div class="item-row">
+                <div onclick="triggerImgEdit('pre', '${i.id}')">
+                    <img src="${i.img || ''}" class="item-img">
+                    <span style="font-size:10px;display:block;text-align:center;color:#cfcfcf;margin-top:6px;font-weight:800;">換圖</span>
+                </div>
+        
+                <div class="item-info pre-border" style="border-left-color:${i.isBought ? '#2ecc71' : '#eee'}">
+                    <div class="item-main">
+                        <div class="item-main-text">
+                            <div class="item-title">
+                                <span class="editable-field" onclick="editPreInList('${i.id}','name','${i.name}')">${i.name}</span>
                             </div>
-                            <div class="item-actions">
-                                <button class="item-del" onclick="if(confirm('刪除？')) dataRef.child('${i.id}').remove()">✕</button>
-                                <button class="detail-toggle" onclick="toggleDetail('buy','${i.id}')">詳情 ▾</button>
+        
+                            <!-- 狀態 -->
+                            <div style="margin-top:6px;">
+                                <button class="chip ${i.isBought ? 'chip-green' : ''}"
+                                        style="font-size:11px;padding:6px 10px;"
+                                        onclick="preRef.child('${i.id}').update({isBought: ${!i.isBought}})">
+                                    ${i.isBought ? '● 已買到' : '○ 未購買'}
+                                </button>
+                            </div>
+        
+                            <!-- 地點 -->
+                            <div style="margin-top:8px; font-size:12px; color:var(--text-sub);">
+                                📍 <span class="editable-field" onclick="editPreInList('${i.id}','loc','${i.loc || ''}')">${i.loc || '未填'}</span>
+                            </div>
+        
+                            <!-- 數量（不折疊） -->
+                            <div class="chip-row" style="margin-top:10px;">
+                                <span class="chip chip-strong" onclick="editPreInList('${i.id}','qty','${i.qty}')">x ${i.qty || 1}</span>
                             </div>
                         </div>
-
-                        <!-- 數量不折疊：永遠顯示 -->
+        
+                        <div class="item-actions">
+                            <button class="item-del" onclick="if(confirm('刪除？')) preRef.child('${i.id}').remove()">✕</button>
+                            <button class="detail-toggle" onclick="toggleDetail('pre','${i.id}')">詳情 ▾</button>
+                        </div>
+                    </div>
+        
+                    <!-- 詳情 -->
+                    <div id="pre-detail-${i.id}" class="item-detail">
+                        <div class="price-grid">
+                            <div class="price-tag">
+                                <span class="price-label">含稅標價 (¥)</span>
+                                ¥ <span class="editable-field"
+                                       onclick="editPreInList('${i.id}','taxIncludedPrice','${i.taxIncludedPrice}')">
+                                       ${i.taxIncludedPrice}
+                                </span>
+                            </div>
+                            <div class="price-tag" style="background:var(--soft);border:1px solid var(--soft-border);">
+                                <span class="price-label">售價 (NT$)</span>
+                                NT$ <span class="editable-field"
+                                         onclick="editPreInList('${i.id}','sellPrice','${i.sellPrice}')">
+                                         ${i.sellPrice}
+                                </span>
+                            </div>
+                        </div>
+        
+                        <!-- 👇 這裡是你一直看不到的關鍵：買手＋卡片 -->
                         <div class="chip-row">
-                            <span class="chip chip-strong" onclick="editPreInList('${i.id}','customer','${i.customer}')">👤 ${i.customer}</span>
-                            <span class="chip" onclick="editPreInList('${i.id}','buyer','${i.buyer || ''}')">🧤 ${i.buyer || '未選'}</span>
+                            <span class="chip chip-strong"
+                                  onclick="editPreInList('${i.id}','customer','${i.customer}')">
+                                  👤 ${i.customer}
+                            </span>
+        
+                            <span class="chip"
+                                  onclick="editPreInList('${i.id}','buyer','${i.buyer || ''}')">
+                                  🧤 ${i.buyer || '未選'}
+                            </span>
+        
                             ${
                                 i.buyer === 'Ray'
-                                ? `<span class="chip" onclick="editPreInList('${i.id}','cardInfo','${i.cardInfo || ''}')">💳 ${i.cardInfo || '選擇卡片'}</span>`
+                                ? `<span class="chip"
+                                         onclick="editPreInList('${i.id}','cardInfo','${i.cardInfo || ''}')">
+                                         💳 ${i.cardInfo || '選擇卡片'}
+                                   </span>`
                                 : ''
                             }
                         </div>
-
-                        <div id="buy-detail-${i.id}" class="item-detail">
-                            <div class="price-grid">
-                                <div class="price-tag">
-                                    <span class="price-label">含稅成本 (¥)</span>
-                                    ¥ <span class="editable-field" onclick="editInList('${i.id}','priceTax','${i.priceTax}')">${i.priceTax}</span>
-                                </div>
-                                <div class="price-tag" style="background:var(--soft);border:1px solid var(--soft-border);">
-                                    <span class="price-label">售價 (NT$)</span>
-                                    NT$ <span class="editable-field" onclick="editInList('${i.id}','priceSell','${i.priceSell}')">${i.priceSell}</span>
-                                </div>
-                            </div>
-
-                            <div class="chip-row">
-                                <span class="chip" onclick="editInList('${i.id}','buyer','${i.buyer}')">🧤 ${i.buyer}</span>
-                                ${
-                                    i.buyer === 'Ray'
-                                    ? `<span class="chip" onclick="editInList('${i.id}','cardInfo','${i.cardInfo || ''}')">💳 ${i.cardInfo || '選擇卡片'}</span>`
-                                    : ''
-                                }
-                                <span class="chip" onclick="editInList('${i.id}','loc','${i.loc || ''}')">📍 ${i.loc || '地點'}</span>
-                            </div>
-
-                            <div class="tax-row">
-                                ${
-                                    i.isTaxFree
-                                    ? `
-                                        <span class="chip" onclick="toggleBuyTaxItem('${i.id}')">有退稅（點我關閉）</span>
-                                        <span class="chip chip-green" onclick="editInList('${i.id}','taxFreePrice','${i.taxFreePrice || ''}')">退稅價 ¥${i.taxFreePrice || 0}</span>
-                                        <span class="chip" onclick="editInList('${i.id}','taxRate','${i.taxRate || ''}')">稅率 ${i.taxRate || ''}%</span>
-                                      `
-                                    : `<span class="chip" onclick="toggleBuyTaxItem('${i.id}')">無退稅（點我開啟）</span>`
-                                }
-                            </div>
+        
+                        <div class="tax-row">
+                            ${
+                                i.isTaxFree
+                                ? `
+                                    <span class="chip" onclick="togglePreTaxItem('${i.id}')">有退稅（點我關閉）</span>
+                                    <span class="chip chip-green"
+                                          onclick="editPreInList('${i.id}','taxFreePrice','${i.taxFreePrice || ''}')">
+                                          退稅價 ¥${i.taxFreePrice || 0}
+                                    </span>
+                                    <span class="chip"
+                                          onclick="editPreInList('${i.id}','taxRate','${i.taxRate || ''}')">
+                                          稅率 ${i.taxRate || ''}%
+                                    </span>
+                                  `
+                                : `<span class="chip" onclick="togglePreTaxItem('${i.id}')">無退稅（點我開啟）</span>`
+                            }
                         </div>
                     </div>
                 </div>
-            `).join('');
+            </div>
+        `).join('');
+
 
             const preArr = Object.entries(rawPre).map(([id, val]) => ({ id, ...val })).reverse();
 
@@ -1023,5 +1050,6 @@
     </script>
 </body>
 </html>
+
 
 
