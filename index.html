@@ -946,7 +946,7 @@
                 `).join('');
 
                 // ✅ 每一筆預購品：台幣售價 + 日幣含稅標價
-                const preLines = g.pre.map(p => `
+               const preLines = g.pre.map(p => `
                     <div class="summary-item">
                         <img src="${p.img || ''}" class="summary-img">
                         <div class="summary-text">
@@ -954,9 +954,18 @@
                             <div class="summary-sub">
                                 售價 NT$${p.sellPrice || 0} ／ 成本 ¥${p.taxIncludedPrice || 0}
                             </div>
+                            <div class="summary-sub">
+                                買手：${p.buyer || '未選'}
+                                ${
+                                    p.buyer === 'Ray'
+                                        ? ` ／ 卡別：${p.cardInfo || '未選'}`
+                                        : ''
+                                }
+                            </div>
                         </div>
                     </div>
                 `).join('');
+
 
                 return `
                     <div class="card">
@@ -1014,4 +1023,5 @@
     </script>
 </body>
 </html>
+
 
