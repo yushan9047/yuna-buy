@@ -332,6 +332,26 @@
             <div class="form-group"><label>📦 品名</label><input type="text" id="preName" placeholder="名稱"></div>
             <div class="form-group"><label>👤 顧客名</label><input type="text" id="preCust" placeholder="客名"></div>
 
+            <!-- 預購買手 + Ray 卡別 -->
+            <div class="form-group">
+                <label>🧤 負責買手</label>
+                <div class="btn-group" id="preBuyerGroup">
+                    <button class="btn-opt" onclick="setPreBuyer('Ray', this)">Ray</button>
+                    <button class="btn-opt" onclick="setPreBuyer('Nana', this)">Nana</button>
+                    <button class="btn-opt" onclick="setPreBuyer('Cupid', this)">Cupid</button>
+                </div>
+                <input type="hidden" id="preBuyer">
+                <div id="preRayCardOptions" style="display:none; background:var(--soft); padding:15px; border-radius:25px; margin-top:15px; border:1px solid var(--soft-border);">
+                    <label style="color:var(--primary);">💳 選擇卡片</label>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn-opt" onclick="setPreRayCard('na爸卡', this)" style="padding:10px">na爸卡</button>
+                        <button class="btn-opt" onclick="setPreRayCard('ray卡', this)" style="padding:10px">ray卡</button>
+                        <button class="btn-opt" onclick="setPreRayCard('qp卡', this)" style="padding:10px">qp卡</button>
+                    </div>
+                    <input type="hidden" id="preRayCard">
+                </div>
+            </div>
+
             <!-- 預購採買地點 -->
             <div class="form-group"><label>📍 採買地點</label><input type="text" id="preLoc" placeholder="地點"></div>
             
@@ -449,6 +469,40 @@
             document.querySelectorAll('#rayCardOptions .btn-opt').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
+
+        // --- 預購用：買手 + Ray 卡別 ---
+        function setPreBuyer(name, btn) {
+            const buyerInput = document.getElementById('preBuyer');
+            if (!buyerInput) return;
+        
+            buyerInput.value = name;
+        
+            // 只清預購區塊裡的買手按鈕 active，不影響退稅按鈕
+            document.querySelectorAll('#preBuyerGroup .btn-opt').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        
+            const cardArea = document.getElementById('preRayCardOptions');
+            if (cardArea) {
+                cardArea.style.display = (name === 'Ray') ? 'block' : 'none';
+            }
+        
+            // 如果改成不是 Ray，就清空卡別
+            if (name !== 'Ray') {
+                const preRayCard = document.getElementById('preRayCard');
+                if (preRayCard) preRayCard.value = "";
+                document.querySelectorAll('#preRayCardOptions .btn-opt').forEach(b => b.classList.remove('active'));
+            }
+        }
+        
+        function setPreRayCard(card, btn) {
+            const cardInput = document.getElementById('preRayCard');
+            if (!cardInput) return;
+        
+            cardInput.value = card;
+            document.querySelectorAll('#preRayCardOptions .btn-opt').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
 
         function openPicker(title, options, callback) {
             document.getElementById('modalTitle').innerText = title; 
@@ -568,6 +622,12 @@
                 loc: document.getElementById('preLoc').value || "未填",
                 qty: document.getElementById('preQty').value || "1",
                 sellPrice: document.getElementById('preSellPrice').value || "0",
+                // 👇 新增：預購買手 + 卡別
+                buyer: document.getElementById('preBuyer').value || "未選",
+                cardInfo: (document.getElementById('preBuyer').value === 'Ray')
+                    ? (document.getElementById('preRayCard').value || "")
+                    : "",
+                // 原有退稅欄位
                 isTaxFree: isTaxFree,
                 taxRate: taxRateVal,
                 taxIncludedPrice: document.getElementById('preTaxPrice').value || "0",
@@ -577,10 +637,20 @@
                 time: new Date().toLocaleString()
             });
 
-            ['preName','preCust','preLoc','preTaxPrice','preSellPrice','preImg','preQty','preTaxRate','preTaxFreePrice'].forEach(id=> {
+
+            ['preName','preCust','preLoc','preTaxPrice','preSellPrice','preImg','preQty','preTaxRate','preTaxFreePrice','preBuyer','preRayCard'].forEach(id=> {
                 let el = document.getElementById(id); 
                 if(el) el.value = (id === 'preQty' ? '1' : '');
             });
+
+            const preRayCardOptions = document.getElementById('preRayCardOptions');
+            if (preRayCardOptions) {
+                preRayCardOptions.style.display = 'none';
+                document.querySelectorAll('#preBuyerGroup .btn-opt, #preRayCardOptions .btn-opt')
+                    .forEach(b => b.classList.remove('active'));
+            }
+
+
 
             togglePreTax(false);
         }
@@ -612,12 +682,30 @@
         }
 
         function editPreInList(id, field, current) {
-            let v = prompt(`修改 ${field}:`, current);
-            if (v === null) return;
-            const up = {};
-            up[field] = v;
-            preRef.child(id).update(up);
+            if (field === 'buyer') {
+                // 預購買手選擇
+                openPicker("選擇買手", ['Ray', 'Nana', 'Cupid'], (val) => {
+                    const up = { buyer: val };
+                    if (val !== 'Ray') {
+                        up.cardInfo = "";
+                    }
+                    preRef.child(id).update(up);
+                });
+            } else if (field === 'cardInfo') {
+                // Ray 卡別選擇
+                openPicker("選擇卡片", ['na爸卡', 'ray卡', 'qp卡'], (val) => {
+                    preRef.child(id).update({ cardInfo: val });
+                });
+            } else {
+                // 其他欄位維持原本 prompt 行為
+                let v = prompt(`修改 ${field}:`, current);
+                if (v === null) return;
+                const up = {};
+                up[field] = v;
+                preRef.child(id).update(up);
+            }
         }
+
 
         // 清單裡切換「預購品」的退稅狀態
         function togglePreTaxItem(id) {
@@ -682,8 +770,14 @@
                         </div>
 
                         <!-- 數量不折疊：永遠顯示 -->
-                        <div class="chip-row" style="margin-top:10px;">
-                            <span class="chip chip-strong" onclick="editInList('${i.id}','qty','${i.qty}')">x ${i.qty || 1}</span>
+                        <div class="chip-row">
+                            <span class="chip chip-strong" onclick="editPreInList('${i.id}','customer','${i.customer}')">👤 ${i.customer}</span>
+                            <span class="chip" onclick="editPreInList('${i.id}','buyer','${i.buyer || ''}')">🧤 ${i.buyer || '未選'}</span>
+                            ${
+                                i.buyer === 'Ray'
+                                ? `<span class="chip" onclick="editPreInList('${i.id}','cardInfo','${i.cardInfo || ''}')">💳 ${i.cardInfo || '選擇卡片'}</span>`
+                                : ''
+                            }
                         </div>
 
                         <div id="buy-detail-${i.id}" class="item-detail">
@@ -920,3 +1014,4 @@
     </script>
 </body>
 </html>
+
