@@ -826,10 +826,19 @@
       dataRef.child(id).update(up);
     }
 
-    // ✅✅✅ 核心：渲染清單（修好 preArr 未定義、重複渲染、allList 沒渲染）
+    // ✅ 核心：渲染清單（預購：未買在上、已買在下）
     function renderLists() {
+      // 現場採購：維持原本邏輯（反轉，最新在上）
       const buyArr = Object.entries(rawData).map(([id, val]) => ({ id, ...val })).reverse();
-      const preArr = Object.entries(rawPre).map(([id, val]) => ({ id, ...val })).reverse();
+
+      // 預購：先照原本順序建立陣列
+      const preArrRaw = Object.entries(rawPre).map(([id, val]) => ({ id, ...val })).reverse();
+
+      // 排序：未購買（isBought 為 false/undefined）先排在上面，已購買排下面
+      const preArr = [
+        ...preArrRaw.filter(i => !i.isBought),
+        ...preArrRaw.filter(i =>  i.isBought)
+      ];
 
       const allListEl = document.getElementById('allList');
       const preListEl = document.getElementById('preOrderList');
@@ -908,7 +917,7 @@
         `).join('');
       }
 
-      // --- 預購清單 ---
+      // --- 預購清單（用排好順序的 preArr）---
       if (preListEl) {
         preListEl.innerHTML = preArr.map(i => `
           <div class="item-row">
@@ -986,6 +995,7 @@
         `).join('');
       }
 
+      // 對帳統計用排好順序的 preArr
       renderSummary(buyArr, preArr);
     }
 
