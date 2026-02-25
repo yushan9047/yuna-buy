@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <title>對帳統計</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="header-bar">
+    <button class="back-btn" onclick="window.history.back()">← 返回</button>
+    <h2>對帳統計</h2>
+  </div>
+
+  <button onclick="exportToExcel()" class="submit-btn">📊 匯出對帳 Excel</button>
+  <button onclick="clearAllData()" class="submit-btn">🗑️ 清空所有數據</button>
+
+  <div id="customerList"></div> <!-- 顯示顧客對帳統計資料 -->
+</body>
+</html>
