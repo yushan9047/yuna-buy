@@ -1,0 +1,62 @@
+:root {
+  --primary: #3D5A80;
+  --bg: #fffafb;
+  --card-bg: #ffffff;
+  --text-main: #1f2937;
+  --text-sub: #6b7280;
+  --shadow: 0 8px 30px rgba(0,0,0,0.04);
+  --green: #2a9d8f;
+  --soft: #eef4ff;
+  --soft-border: #dbeafe;
+}
+
+body {
+  font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  background: var(--bg);
+  margin: 0;
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+.main-header {
+  text-align: center;
+  padding: 50px 0 20px 0;
+}
+
+.main-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: 2px;
+}
+
+.header-bar {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  padding: 15px 0;
+  z-index: 100;
+}
+
+.header-bar h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.back-btn {
+  background: white;
+  border: 1.5px solid #eee;
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* 其他樣式請依照原來的保持 */
