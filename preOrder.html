@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>新增預購商品</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="header-bar">
+    <button class="back-btn" onclick="window.history.back()">← 返回</button>
+    <h2>新增預購商品</h2>
+  </div>
+
+  <div class="card">
+    <!-- 預購商品的新增表單 -->
+    <div class="form-group">
+      <label>📷 商品照片</label>
+      <input type="file" id="preImg" accept="image/*">
+    </div>
+    <div class="form-group">
+      <label>📦 品名</label>
+      <input type="text" id="preName" placeholder="商品名稱">
+    </div>
+    <div class="form-group">
+      <label>👤 顧客名稱</label>
+      <input type="text" id="preCust" placeholder="顧客名稱">
+    </div>
+
+    <div class="form-group">
+      <label>🧤 負責買手</label>
+      <div class="btn-group" id="preBuyerGroup">
+        <button class="btn-opt" onclick="setPreBuyer('Ray', this)">Ray</button>
+        <button class="btn-opt" onclick="setPreBuyer('Nana', this)">Nana</button>
+        <button class="btn-opt" onclick="setPreBuyer('Cupid', this)">Cupid</button>
+      </div>
+      <input type="hidden" id="preBuyer">
+
+      <!-- 買手為Ray時顯示的卡片選擇 -->
+      <div id="preRayCardOptions" style="display:none; background:var(--soft); padding:15px; border-radius:25px; margin-top:15px; border:1px solid var(--soft-border);">
+        <label style="color:var(--primary);">💳 選擇卡片</label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn-opt" onclick="setPreRayCard('na爸卡', this)" style="padding:10px">na爸卡</button>
+          <button class="btn-opt" onclick="setPreRayCard('ray卡', this)" style="padding:10px">ray卡</button>
+          <button class="btn-opt" onclick="setPreRayCard('qp卡', this)" style="padding:10px">qp卡</button>
+        </div>
+        <input type="hidden" id="preRayCard">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>📍 採買地點</label>
+      <input type="text" id="preLoc" placeholder="地點">
+    </div>
+
+    <div class="form-group">
+      <label>🏷️ 退稅</label>
+      <div class="btn-group">
+        <button id="taxBtnYes" class="btn-opt" onclick="togglePreTax(true)">有退稅</button>
+        <button id="taxBtnNo" class="btn-opt active" onclick="togglePreTax(false)">無退稅</button>
+      </div>
+      <input type="hidden" id="preIsTaxFree" value="false">
+    </div>
+
+    <div style="display:flex; gap:12px;">
+      <div class="form-group" style="flex:1.5">
+        <label>💴 含稅價 (¥)</label>
+        <input type="number" id="preTaxPrice" placeholder="0">
+      </div>
+      <div class="form-group" id="taxRateGroup" style="flex:1; display:none;">
+        <label>％ 稅率</label>
+        <input type="number" id="preTaxRate" value="10">
+      </div>
+    </div>
+
+    <div class="form-group" id="preTaxFreeGroup" style="display:none;">
+      <label>💸 退稅價 (¥)</label>
+      <input type="number" id="preTaxFreePrice" placeholder="0">
+    </div>
+
+    <div style="display:flex; gap:12px;">
+      <div class="form-group" style="flex:1">
+        <label>🔢 數量</label>
+        <input type="number" id="preQty" value="1">
+      </div>
+      <div class="form-group" style="flex:1">
+        <label>💰 售價 (NT$)</label>
+        <input type="number" id="preSellPrice" placeholder="0">
+      </div>
+    </div>
+
+    <button class="submit-btn" style="background:var(--green);" onclick="savePreOrder()">✅ 儲存預購</button>
+  </div>
+
+  <div id="preOrderList"></div> <!-- 用於顯示預購商品清單 -->
+</body>
+</html>
