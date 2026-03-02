@@ -2,19 +2,64 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Yuna 代購管理系統 v32</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="homePage">
-    <div class="main-header">
-      <h1>Yuna Select</h1>
-    </div>
-    <button class="main-btn btn-add" onclick="location.href='addPurchase.html'">＋ 新增現場採購</button>
-    <button class="main-btn btn-list" onclick="location.href='purchaseDetails.html'">📋 採購明細</button>
-    <button class="main-btn btn-pre" onclick="location.href='preOrder.html'">📝 預購商品</button>
-    <button class="main-btn btn-cust" onclick="location.href='accounting.html'">👥 顧客統計對帳</button>
+  <div class="app">
+
+    <!-- 上方白色 header（類似 ESG 那個導航列） -->
+    <header class="main-header">
+      <div class="logo-area">
+        <div class="logo-icon">Y</div>
+        <div class="logo-text">
+          <div class="logo-title">Yuna Select</div>
+          <div class="logo-subtitle">代購管理系統 v32</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主要內容：卡片列表 -->
+    <main class="content">
+      <section class="card-grid">
+
+        <button class="card-btn" onclick="location.href='addPurchase.html'">
+          <div class="card-banner banner-add"></div>
+          <div class="card-body">
+            <h2>新增現場採購</h2>
+            <p>現場掃貨時，快速記錄品項與成本。</p>
+          </div>
+        </button>
+
+        <button class="card-btn" onclick="location.href='purchaseDetails.html'">
+          <div class="card-banner banner-list"></div>
+          <div class="card-body">
+            <h2>採購明細</h2>
+            <p>查看每一筆採購紀錄與匯總資訊。</p>
+          </div>
+        </button>
+
+        <button class="card-btn" onclick="location.href='preOrder.html'">
+          <div class="card-banner banner-pre"></div>
+          <div class="card-body">
+            <h2>預購商品</h2>
+            <p>整理顧客預購清單，避免漏單。</p>
+          </div>
+        </button>
+
+        <button class="card-btn" onclick="location.href='accounting.html'">
+          <div class="card-banner banner-cust"></div>
+          <div class="card-body">
+            <h2>顧客統計對帳</h2>
+            <p>一鍵看每位顧客的訂單與收款狀態。</p>
+          </div>
+        </button>
+
+      </section>
+    </main>
+
   </div>
 </body>
 </html>
