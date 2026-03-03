@@ -24,7 +24,7 @@
       background: #ffffff;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
     }
 
     .order-title-row {
@@ -82,6 +82,39 @@
       white-space: nowrap;
     }
 
+    .order-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .order-action-btn {
+      border-radius: 999px;
+      border: 1px solid var(--soft-border);
+      background: #ffffff;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .order-action-btn:hover {
+      background: var(--soft);
+    }
+
+    .order-action-btn--danger {
+      border-color: #fecaca;
+      color: #b91c1c;
+    }
+
+    .order-action-btn--danger:hover {
+      background: #fee2e2;
+    }
+
     .empty-state {
       margin-top: 12px;
       font-size: 0.85rem;
@@ -134,6 +167,10 @@
         console.error('讀取 yunaOrders 失敗', e);
         return [];
       }
+    }
+
+    function saveOrdersToStorage(list) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
     }
 
     let orders = loadOrders();
@@ -200,12 +237,82 @@
             <span>成本：${costText}</span>
             <span>售價：${order.sellPrice != null ? order.sellPrice + ' NT$' : '-'}</span>
           </div>
+          <div class="order-actions">
+            <button class="order-action-btn" onclick="editOrder('${order.id}')">
+              ✏️ <span>編輯</span>
+            </button>
+            <button class="order-action-btn order-action-btn--danger" onclick="deleteOrder('${order.id}')">
+              🗑 <span>刪除</span>
+            </button>
+          </div>
         `;
 
         container.appendChild(div);
       });
     }
 
+    function findOrderIndexById(id) {
+      return orders.findIndex(o => o.id === id);
+    }
+
+    function editOrder(id) {
+      const idx = findOrderIndexById(id);
+      if (idx === -1) {
+        alert('找不到這筆資料');
+        return;
+      }
+      const o = orders[idx];
+
+      // 用 prompt 簡單編輯幾個主要欄位
+      const newName = prompt('商品名稱', o.name || '');
+      if (newName === null) return; // 取消編輯
+
+      const newQtyStr = prompt('數量', o.qty != null ? String(o.qty) : '1');
+      if (newQtyStr === null) return;
+      const newQty = Number(newQtyStr || 0) || 1;
+
+      const newCostStr = prompt(
+        `成本（主幣別：${o.currency || '-'}）`,
+        o.cost != null ? String(o.cost) : ''
+      );
+      if (newCostStr === null) return;
+      const newCost = newCostStr === '' ? null : Number(newCostStr || 0);
+
+      const newSellStr = prompt(
+        '售價（NT$）',
+        o.sellPrice != null ? String(o.sellPrice) : ''
+      );
+      if (newSellStr === null) return;
+      const newSell = newSellStr === '' ? null : Number(newSellStr || 0);
+
+      // 寫回陣列
+      o.name = newName.trim() || o.name;
+      o.qty = newQty;
+      o.cost = newCost;
+      o.sellPrice = newSell;
+
+      // 儲存
+      saveOrdersToStorage(orders);
+      renderList();
+      alert('已更新此筆資料');
+    }
+
+    function deleteOrder(id) {
+      const idx = findOrderIndexById(id);
+      if (idx === -1) {
+        alert('找不到這筆資料');
+        return;
+      }
+
+      const ok = confirm('確定要刪除這筆資料嗎？此動作無法復原。');
+      if (!ok) return;
+
+      orders.splice(idx, 1);
+      saveOrdersToStorage(orders);
+      renderList();
+    }
+
+    // 初始化
     renderList();
   </script>
 </body>
