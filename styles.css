@@ -397,3 +397,172 @@ input:focus {
   text-align: center;
   cursor: pointer;
 }
+
+/* =========================
+   首頁卡片新版樣式（貼在檔案最後）
+   ========================= */
+
+.app-shell {
+  min-height: 100vh;
+  max-width: 480px;           /* 手機為主的寬度 */
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* 上方白色 header bar */
+.home-header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #ffffff;
+  padding: 12px 16px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  border-radius: 0 0 24px 24px;
+}
+
+.home-logo-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.home-logo-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary), var(--green));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.home-logo-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-logo-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--primary);
+}
+
+.home-logo-subtitle {
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+/* 內容區（卡片列表） */
+.home-content {
+  padding: 18px 14px 24px;
+  flex: 1;
+}
+
+.home-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;   /* 手機先一欄 */
+  gap: 16px;
+}
+
+/* 卡片按鈕 */
+.home-card-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+
+  border-radius: 24px;
+  overflow: hidden;
+  background-color: var(--card-bg);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+
+.home-card-btn:focus {
+  outline: none;
+}
+
+.home-card-btn:active {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+/* 上半部 banner（假的圖片區，可以之後換成真圖） */
+.home-card-banner {
+  height: 130px;
+  background-size: cover;
+  background-position: center;
+}
+
+/* 四個卡片各自不同漸層色 */
+.home-banner-add {
+  background-image: linear-gradient(
+    135deg,
+    rgba(61, 90, 128, 0.2),
+    rgba(42, 157, 143, 0.5)
+  );
+}
+
+.home-banner-list {
+  background-image: linear-gradient(
+    135deg,
+    rgba(69, 123, 157, 0.2),
+    rgba(245, 158, 11, 0.5)
+  );
+}
+
+.home-banner-pre {
+  background-image: linear-gradient(
+    135deg,
+    rgba(42, 157, 143, 0.2),
+    rgba(236, 72, 153, 0.5)
+  );
+}
+
+.home-banner-cust {
+  background-image: linear-gradient(
+    135deg,
+    rgba(43, 45, 66, 0.2),
+    rgba(59, 130, 246, 0.5)
+  );
+}
+
+/* 卡片下半部文字 */
+.home-card-body {
+  padding: 14px 16px 16px;
+}
+
+.home-card-body h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.home-card-body p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-sub);
+}
+
+/* 比較寬的螢幕（例如你在桌機上預覽）變兩欄 */
+@media (min-width: 640px) {
+  .app-shell {
+    max-width: 820px;
+  }
+
+  .home-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
