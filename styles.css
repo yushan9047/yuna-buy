@@ -149,6 +149,10 @@ body {
    首頁不同選單卡片配色
    ========================= */
 
+/* =========================
+   首頁不同選單卡片配色
+   ========================= */
+
 /* 現場採購 - 藍色系 */
 
 /* 🇯🇵 日本 - 深藍 */
@@ -159,7 +163,7 @@ body {
   background: #1d4ed8; /* 深藍 */
 }
 
-/* 🇰🇷 韓國 - 淡藍 */
+/* 🇰🇷 韓國 - 淺藍 */
 .card--onsite-kr {
   background: linear-gradient(135deg, #eff6ff, #dbeafe);
 }
@@ -177,7 +181,7 @@ body {
   background: #15803d; /* 深綠 */
 }
 
-/* 🇰🇷 韓國 - 淡綠 */
+/* 🇰🇷 韓國 - 淺綠 */
 .card--preorder-kr {
   background: linear-gradient(135deg, #f0fdf4, #dcfce7);
 }
@@ -185,7 +189,7 @@ body {
   background: #4ade80; /* 淺綠 */
 }
 
-/* 其他功能卡片維持原色 */
+/* 其他功能卡片 */
 .card--purchase-list {
   background: linear-gradient(135deg, #fffbeb, #fef3c7);
 }
