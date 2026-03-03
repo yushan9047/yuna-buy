@@ -561,7 +561,169 @@ input:focus {
   .app-shell {
     max-width: 820px;
   }
+/* =========================
+   手機首頁：置中 + 放大 + 不同顏色
+   ========================= */
 
+.app-shell {
+  min-height: 100vh;
+  max-width: 480px;            /* 手機為主的寬度 */
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* 上方白色 header bar */
+.home-header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #ffffff;
+  padding: 14px 16px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  border-radius: 0 0 24px 24px;
+}
+
+.home-logo-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;     /* 標題也置中 */
+}
+
+.home-logo-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary), var(--green));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.home-logo-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.home-logo-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--primary);
+}
+
+.home-logo-subtitle {
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+/* 內容區：用 flex 把卡片垂直置中 */
+.home-content {
+  padding: 20px 16px 28px;
+  flex: 1;
+  display: flex;
+  align-items: center;         /* 垂直置中（手機高度較高時會往中間靠） */
+  justify-content: center;
+}
+
+.home-card-grid {
+  width: 100%;
+  max-width: 420px;            /* 卡片本身的寬度 */
+  display: grid;
+  grid-template-columns: 1fr;  /* 手機：一欄 */
+  gap: 16px;
+}
+
+/* 卡片按鈕本體：變大塊、內文置中 */
+.home-card-btn {
+  border: none;
+  border-radius: 24px;
+  padding: 18px 18px;
+  min-height: 90px;            /* 高度拉高 */
+  display: flex;
+  align-items: center;
+  justify-content: center;     /* 文字整塊置中 */
+  cursor: pointer;
+
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+
+.home-card-btn:focus {
+  outline: none;
+}
+
+.home-card-btn:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+.home-card-body {
+  text-align: center;
+}
+
+.home-card-body h2 {
+  margin: 0 0 4px;
+  font-size: 18px;             /* 字放大一點 */
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.home-card-body p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* =========
+   不同按鈕不同顏色
+   ========= */
+
+/* 新增現場採購：主色系 */
+.home-card-add {
+  background: linear-gradient(135deg, #3D5A80, #4f83c6);
+  color: #ffffff;
+}
+
+/* 採購明細：藍色變化 */
+.home-card-list {
+  background: linear-gradient(135deg, #457B9D, #63a4ff);
+  color: #ffffff;
+}
+
+/* 預購商品：綠色 */
+.home-card-pre {
+  background: linear-gradient(135deg, #2A9D8F, #56c8a5);
+  color: #ffffff;
+}
+
+/* 顧客統計對帳：深色穩重 */
+.home-card-cust {
+  background: linear-gradient(135deg, #2B2D42, #4b4f79);
+  color: #ffffff;
+}
+
+/* 讓卡片內文淡一點的白（避免太刺眼） */
+.home-card-btn p {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 較寬螢幕時（你在桌機預覽）改成兩欄，但仍置中 */
+@media (min-width: 640px) {
+  .app-shell {
+    max-width: 820px;
+  }
+
+  .home-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
   .home-card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
