@@ -1,53 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>Yuna 代購系統</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #f9fafb;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --card-radius: 18px;
+      --shadow-soft: 0 10px 30px rgba(15,23,42,0.06);
+      --primary: #3b82f6;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --pink: #ec4899;
+      --purple: #8b5cf6;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 640px;
+    }
+
+    .app-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .app-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .app-subtitle {
+      font-size: 0.88rem;
+      color: var(--text-sub);
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    @media (min-width: 640px) {
+      .card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .card-link {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .card {
+      border-radius: var(--card-radius);
+      padding: 18px 16px;
+      box-shadow: var(--shadow-soft);
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 92px;
+      position: relative;
+      overflow: hidden;
+      transition:
+        transform 0.12s ease-out,
+        box-shadow 0.12s ease-out,
+        filter 0.12s ease-out;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      right: -24px;
+      bottom: -24px;
+      width: 80px;
+      height: 80px;
+      opacity: 0.15;
+      border-radius: 999px;
+      transform: rotate(-8deg);
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .card-desc {
+      font-size: 0.82rem;
+      color: var(--text-sub);
+    }
+
+    .card-tag {
+      margin-top: 10px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.9;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 18px 40px rgba(15,23,42,0.10);
+      filter: brightness(1.03);
+    }
+
+    /* 不同卡片顏色 */
+    .card--onsite {
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    }
+    .card--onsite::after { background: var(--primary); }
+
+    .card--preorder {
+      background: linear-gradient(135deg, #ecfdf3, #dcfce7);
+    }
+    .card--preorder::after { background: var(--green); }
+
+    .card--purchase-list {
+      background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    }
+    .card--purchase-list::after { background: var(--amber); }
+
+    .card--yuna {
+      background: linear-gradient(135deg, #fdf2ff, #fae8ff);
+    }
+    .card--yuna::after { background: var(--pink); }
+
+    .card--customer {
+      background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    }
+    .card--customer::after { background: var(--purple); }
+  </style>
+</head>
 <body>
-  <div class="app-shell">
-    <!-- 上方 Logo / 標題 -->
-    <header class="home-header-bar">
-      <div class="home-logo-area">
-        <div class="home-logo-icon">Y</div>
-        <div class="home-logo-text">
-          <div class="home-logo-title">YUNA SELECT</div>
-          <div class="home-logo-subtitle">代購管理系統 v32</div>
-        </div>
-      </div>
+  <div class="app">
+    <header class="app-header">
+      <h1 class="app-title">Yuna 代購系統</h1>
+      <p class="app-subtitle">快速建立訂單、追蹤採購與顧客資料</p>
     </header>
 
-    <!-- 內容：置中的四個大按鈕 -->
-    <main class="home-content">
-      <section class="home-card-grid">
-
-        <button class="home-card-btn home-card-add"
-                onclick="location.href='addPurchase.html'">
-          <div class="home-card-body">
-            <h2>新增現場採購</h2>
-            <p>現場掃貨時，快速記錄品項與成本。</p>
+    <main>
+      <div class="card-grid">
+        <!-- 新增現場採購 -->
+        <a class="card-link" href="onsite-new.html">
+          <div class="card card--onsite">
+            <div>
+              <div class="card-title">新增現場採購</div>
+              <div class="card-desc">
+                逛街時現場幫客人買，快速新增單筆或多筆商品。
+              </div>
+            </div>
+            <div class="card-tag">On-site Order</div>
           </div>
-        </button>
+        </a>
 
-        <button class="home-card-btn home-card-list"
-                onclick="location.href='purchaseDetails.html'">
-          <div class="home-card-body">
-            <h2>採購明細</h2>
-            <p>查看每一筆採購紀錄與匯總資訊。</p>
+        <!-- 預購商品 -->
+        <a class="card-link" href="preorder.html">
+          <div class="card card--preorder">
+            <div>
+              <div class="card-title">預購商品</div>
+              <div class="card-desc">
+                先開預購表，統一整理款式、數量與收款狀態。
+              </div>
+            </div>
+            <div class="card-tag">Pre-order</div>
           </div>
-        </button>
+        </a>
 
-        <button class="home-card-btn home-card-pre"
-                onclick="location.href='preOrder.html'">
-          <div class="home-card-body">
-            <h2>預購商品</h2>
-            <p>整理顧客預購清單，避免漏單。</p>
+        <!-- 採購明細（現場採購新增之商品） -->
+        <a class="card-link" href="purchase-list.html">
+          <div class="card card--purchase-list">
+            <div>
+              <div class="card-title">採購明細</div>
+              <div class="card-desc">
+                查看、編輯現場採購新增的所有商品清單。
+              </div>
+            </div>
+            <div class="card-tag">Purchase List</div>
           </div>
-        </button>
+        </a>
 
-        <button class="home-card-btn home-card-cust"
-                onclick="location.href='accounting.html'">
-          <div class="home-card-body">
-            <h2>顧客統計對帳</h2>
-            <p>一鍵看每位顧客的訂單與收款狀態。</p>
+        <!-- yuna 明細 -->
+        <a class="card-link" href="yuna-report.html">
+          <div class="card card--yuna">
+            <div>
+              <div class="card-title">Yuna 明細</div>
+              <div class="card-desc">
+                統計每趟行程的成本、利潤與收支狀況。
+              </div>
+            </div>
+            <div class="card-tag">Yuna Report</div>
           </div>
-        </button>
+        </a>
 
-      </section>
+        <!-- 顧客明細 -->
+        <a class="card-link" href="customer-list.html">
+          <div class="card card--customer">
+            <div>
+              <div class="card-title">顧客明細</div>
+              <div class="card-desc">
+                管理顧客聯絡方式、偏好與歷史訂單紀錄。
+              </div>
+            </div>
+            <div class="card-tag">Customer</div>
+          </div>
+        </a>
+      </div>
     </main>
   </div>
 </body>
+</html>
