@@ -93,5 +93,143 @@
   </div>
 
   <div id="preOrderList"></div> <!-- 用於顯示預購商品清單 -->
+
+  <script>
+  const STORAGE_KEY = 'yunaOrders';
+
+  function addOrderToStorage(order) {
+    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    list.push(order);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
+
+  /* =========================
+     退稅切換
+     ========================= */
+  function togglePreTax(hasTaxFree) {
+    const yesBtn = document.getElementById('taxBtnYes');
+    const noBtn = document.getElementById('taxBtnNo');
+    const taxRateGroup = document.getElementById('taxRateGroup');
+    const taxFreeGroup = document.getElementById('preTaxFreeGroup');
+    const isTaxFreeInput = document.getElementById('preIsTaxFree');
+
+    if (hasTaxFree) {
+      isTaxFreeInput.value = 'true';
+      yesBtn.classList.add('active');
+      noBtn.classList.remove('active');
+      taxRateGroup.style.display = 'block';
+      taxFreeGroup.style.display = 'block';
+    } else {
+      isTaxFreeInput.value = 'false';
+      yesBtn.classList.remove('active');
+      noBtn.classList.add('active');
+      taxRateGroup.style.display = 'none';
+      taxFreeGroup.style.display = 'none';
+      document.getElementById('preTaxRate').value = 10;
+      document.getElementById('preTaxFreePrice').value = '';
+    }
+  }
+
+  /* =========================
+     買手選擇
+     ========================= */
+  function setPreBuyer(name, btnEl) {
+    const buyerInput = document.getElementById('preBuyer');
+    buyerInput.value = name;
+
+    const group = document.getElementById('preBuyerGroup');
+    const buttons = group.querySelectorAll('.btn-opt');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    btnEl.classList.add('active');
+
+    const rayCardBox = document.getElementById('preRayCardOptions');
+    if (name === 'Ray') {
+      rayCardBox.style.display = 'block';
+    } else {
+      rayCardBox.style.display = 'none';
+      document.getElementById('preRayCard').value = '';
+      const rayButtons = rayCardBox.querySelectorAll('.btn-opt');
+      rayButtons.forEach(btn => btn.classList.remove('active'));
+    }
+  }
+
+  function setPreRayCard(cardName, btnEl) {
+    const cardInput = document.getElementById('preRayCard');
+    cardInput.value = cardName;
+
+    const rayCardBox = document.getElementById('preRayCardOptions');
+    const buttons = rayCardBox.querySelectorAll('.btn-opt');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    btnEl.classList.add('active');
+  }
+
+  /* =========================
+     儲存預購
+     ========================= */
+  function savePreOrder() {
+    const data = {
+      name: document.getElementById('preName').value.trim(),
+      customer: document.getElementById('preCust').value.trim(),
+      buyer: document.getElementById('preBuyer').value,
+      rayCard: document.getElementById('preRayCard').value,
+      loc: document.getElementById('preLoc').value.trim(),
+      isTaxFree: document.getElementById('preIsTaxFree').value === 'true',
+      taxPrice: Number(document.getElementById('preTaxPrice').value || 0),
+      taxRate: Number(document.getElementById('preTaxRate').value || 0),
+      taxFreePrice: Number(document.getElementById('preTaxFreePrice').value || 0),
+      qty: Number(document.getElementById('preQty').value || 1),
+      sellPrice: Number(document.getElementById('preSellPrice').value || 0)
+    };
+
+    /* ===== 驗證 ===== */
+    if (!data.name) {
+      alert("請輸入商品名稱");
+      return;
+    }
+
+    if (!data.taxPrice) {
+      alert("請輸入含稅價");
+      return;
+    }
+
+    if (!data.buyer) {
+      alert("請選擇負責買手");
+      return;
+    }
+
+    /* ===== 建立訂單物件 ===== */
+    const order = {
+      id: 'O-' + Date.now().toString(36),
+      type: 'preorder',
+      country: 'JP',
+      name: data.name,
+      qty: data.qty,
+      buyer: data.buyer,
+      customer: data.customer,
+      loc: data.loc,
+      currency: 'JPY',
+      cost: data.taxPrice,
+      sellPrice: data.sellPrice || null,
+      extra: {
+        isTaxFree: data.isTaxFree,
+        taxRate: data.taxRate,
+        taxFreePrice: data.taxFreePrice,
+        rayCard: data.rayCard
+      }
+    };
+
+    addOrderToStorage(order);
+
+    alert("已儲存到採購明細（日本預購）");
+
+    // 可選：儲存後清空表單
+    document.querySelectorAll("input").forEach(input => {
+      if (input.type !== "hidden") input.value = "";
+    });
+
+    document.getElementById('preQty').value = 1;
+  }
+</script>
+  
 </body>
 </html>
