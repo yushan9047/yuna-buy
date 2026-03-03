@@ -3,104 +3,258 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>新增預購商品</title>
+  <title>新增預購商品（日本）</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* 下方預購列表樣式，跟韓國版類似 */
+    .order-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .order-card {
+      border-radius: 14px;
+      border: 1px solid var(--soft-border);
+      padding: 8px 10px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .order-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .order-name-input {
+      width: 100%;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      padding: 2px 4px;
+      border-radius: 8px;
+    }
+
+    .order-name-input:focus {
+      outline: 1px solid var(--primary);
+      background: #eff6ff;
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+
+    .badge--bought {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .order-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 10px;
+      font-size: 0.78rem;
+      margin-top: 4px;
+    }
+
+    @media (min-width: 700px) {
+      .order-fields {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .field-label {
+      color: var(--text-sub);
+      font-size: 0.7rem;
+    }
+
+    .field-input,
+    .field-select {
+      width: 100%;
+      font-size: 0.78rem;
+      padding: 3px 5px;
+      border-radius: 8px;
+      border: 1px solid var(--soft-border);
+      background: #ffffff;
+    }
+
+    .field-input:focus,
+    .field-select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px rgba(59,130,246,0.15);
+      background: #f9fafb;
+    }
+
+    .order-footer-row {
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+    }
+
+    .toggle-bought {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-bought input {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .empty-state {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
   <div class="header-bar">
     <button class="back-btn" onclick="window.history.back()">← 返回</button>
-    <h2>新增預購商品</h2>
+    <h2>🇯🇵 新增預購商品</h2>
   </div>
 
-  <div class="card">
-    <!-- 預購商品的新增表單 -->
-    <div class="form-group">
-      <label>📷 商品照片</label>
-      <input type="file" id="preImg" accept="image/*">
-    </div>
-    <div class="form-group">
-      <label>📦 品名</label>
-      <input type="text" id="preName" placeholder="商品名稱">
-    </div>
-    <div class="form-group">
-      <label>👤 顧客名稱</label>
-      <input type="text" id="preCust" placeholder="顧客名稱">
-    </div>
-
-    <div class="form-group">
-      <label>🧤 負責買手</label>
-      <div class="btn-group" id="preBuyerGroup">
-        <button class="btn-opt" onclick="setPreBuyer('Ray', this)">Ray</button>
-        <button class="btn-opt" onclick="setPreBuyer('Nana', this)">Nana</button>
-        <button class="btn-opt" onclick="setPreBuyer('Cupid', this)">Cupid</button>
+  <main class="page-body">
+    <!-- 上方：預購新增表單 -->
+    <div class="card">
+      <div class="form-group">
+        <label>📷 商品照片</label>
+        <input type="file" id="preImg" accept="image/*">
       </div>
-      <input type="hidden" id="preBuyer">
+      <div class="form-group">
+        <label>📦 品名</label>
+        <input type="text" id="preName" placeholder="商品名稱">
+      </div>
+      <div class="form-group">
+        <label>👤 顧客名稱</label>
+        <input type="text" id="preCust" placeholder="顧客名稱">
+      </div>
 
-      <!-- 買手為Ray時顯示的卡片選擇 -->
-      <div id="preRayCardOptions" style="display:none; background:var(--soft); padding:15px; border-radius:25px; margin-top:15px; border:1px solid var(--soft-border);">
-        <label style="color:var(--primary);">💳 選擇卡片</label>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn-opt" onclick="setPreRayCard('na爸卡', this)" style="padding:10px">na爸卡</button>
-          <button class="btn-opt" onclick="setPreRayCard('ray卡', this)" style="padding:10px">ray卡</button>
-          <button class="btn-opt" onclick="setPreRayCard('qp卡', this)" style="padding:10px">qp卡</button>
+      <div class="form-group">
+        <label>🧤 負責買手</label>
+        <div class="btn-group" id="preBuyerGroup">
+          <button class="btn-opt" onclick="setPreBuyer('Ray', this)">Ray</button>
+          <button class="btn-opt" onclick="setPreBuyer('Nana', this)">Nana</button>
+          <button class="btn-opt" onclick="setPreBuyer('Cupid', this)">Cupid</button>
         </div>
-        <input type="hidden" id="preRayCard">
+        <input type="hidden" id="preBuyer">
+
+        <!-- 買手為Ray時顯示的卡片選擇 -->
+        <div id="preRayCardOptions" style="display:none; background:var(--soft); padding:15px; border-radius:25px; margin-top:15px; border:1px solid var(--soft-border);">
+          <label style="color:var(--primary);">💳 選擇卡片</label>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn-opt" onclick="setPreRayCard('na爸卡', this)" style="padding:10px">na爸卡</button>
+            <button class="btn-opt" onclick="setPreRayCard('ray卡', this)" style="padding:10px">ray卡</button>
+            <button class="btn-opt" onclick="setPreRayCard('qp卡', this)" style="padding:10px">qp卡</button>
+          </div>
+          <input type="hidden" id="preRayCard">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>📍 採買地點</label>
+        <input type="text" id="preLoc" placeholder="地點">
+      </div>
+
+      <div class="form-group">
+        <label>🏷️ 退稅</label>
+        <div class="btn-group">
+          <button id="taxBtnYes" class="btn-opt" onclick="togglePreTax(true)">有退稅</button>
+          <button id="taxBtnNo" class="btn-opt active" onclick="togglePreTax(false)">無退稅</button>
+        </div>
+        <input type="hidden" id="preIsTaxFree" value="false">
+      </div>
+
+      <div style="display:flex; gap:12px;">
+        <div class="form-group" style="flex:1.5">
+          <label>💴 含稅價 (¥)</label>
+          <input type="number" id="preTaxPrice" placeholder="0">
+        </div>
+        <div class="form-group" id="taxRateGroup" style="flex:1; display:none;">
+          <label>％ 稅率</label>
+          <input type="number" id="preTaxRate" value="10">
+        </div>
+      </div>
+
+      <div class="form-group" id="preTaxFreeGroup" style="display:none;">
+        <label>💸 退稅價 (¥)</label>
+        <input type="number" id="preTaxFreePrice" placeholder="0">
+      </div>
+
+      <div style="display:flex; gap:12px;">
+        <div class="form-group" style="flex:1">
+          <label>🔢 數量</label>
+          <input type="number" id="preQty" value="1">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>💰 售價 (NT$)</label>
+          <input type="number" id="preSellPrice" placeholder="0">
+        </div>
+      </div>
+
+      <button class="submit-btn" style="background:var(--green);" onclick="savePreOrder()">✅ 儲存預購</button>
+    </div>
+
+    <!-- 下方：當頁日本預購清單 -->
+    <div class="card" style="margin-top: 14px;">
+      <div class="form-group" style="margin-bottom: 8px;">
+        <label>🧾 這趟日本預購清單</label>
+      </div>
+      <div id="preOrderList" class="order-list"></div>
+      <div id="jpEmptyState" class="empty-state" style="display:none;">
+        目前尚未新增任何日本預購商品。
       </div>
     </div>
 
-    <div class="form-group">
-      <label>📍 採買地點</label>
-      <input type="text" id="preLoc" placeholder="地點">
-    </div>
-
-    <div class="form-group">
-      <label>🏷️ 退稅</label>
-      <div class="btn-group">
-        <button id="taxBtnYes" class="btn-opt" onclick="togglePreTax(true)">有退稅</button>
-        <button id="taxBtnNo" class="btn-opt active" onclick="togglePreTax(false)">無退稅</button>
-      </div>
-      <input type="hidden" id="preIsTaxFree" value="false">
-    </div>
-
-    <div style="display:flex; gap:12px;">
-      <div class="form-group" style="flex:1.5">
-        <label>💴 含稅價 (¥)</label>
-        <input type="number" id="preTaxPrice" placeholder="0">
-      </div>
-      <div class="form-group" id="taxRateGroup" style="flex:1; display:none;">
-        <label>％ 稅率</label>
-        <input type="number" id="preTaxRate" value="10">
-      </div>
-    </div>
-
-    <div class="form-group" id="preTaxFreeGroup" style="display:none;">
-      <label>💸 退稅價 (¥)</label>
-      <input type="number" id="preTaxFreePrice" placeholder="0">
-    </div>
-
-    <div style="display:flex; gap:12px;">
-      <div class="form-group" style="flex:1">
-        <label>🔢 數量</label>
-        <input type="number" id="preQty" value="1">
-      </div>
-      <div class="form-group" style="flex:1">
-        <label>💰 售價 (NT$)</label>
-        <input type="number" id="preSellPrice" placeholder="0">
-      </div>
-    </div>
-
-    <button class="submit-btn" style="background:var(--green);" onclick="savePreOrder()">✅ 儲存預購</button>
-  </div>
-
-  <div id="preOrderList"></div> <!-- 用於顯示預購商品清單 -->
+  </main>
 
   <script>
   const STORAGE_KEY = 'yunaOrders';
 
-  function addOrderToStorage(order) {
-    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    list.push(order);
+  function loadOrders() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    } catch (e) {
+      console.error('讀取 yunaOrders 失敗', e);
+      return [];
+    }
+  }
+
+  function saveOrdersToStorage(list) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
+
+  function addOrderToStorage(order) {
+    const list = loadOrders();
+    list.push(order);
+    saveOrdersToStorage(list);
   }
 
   /* =========================
@@ -181,7 +335,6 @@
       sellPrice: Number(document.getElementById('preSellPrice').value || 0)
     };
 
-    /* ===== 驗證 ===== */
     if (!data.name) {
       alert("請輸入商品名稱");
       return;
@@ -197,7 +350,6 @@
       return;
     }
 
-    /* ===== 建立訂單物件 ===== */
     const order = {
       id: 'O-' + Date.now().toString(36),
       type: 'preorder',
@@ -210,6 +362,7 @@
       currency: 'JPY',
       cost: data.taxPrice,
       sellPrice: data.sellPrice || null,
+      isBought: false,   // ✅ 預設未買
       extra: {
         isTaxFree: data.isTaxFree,
         taxRate: data.taxRate,
@@ -219,17 +372,224 @@
     };
 
     addOrderToStorage(order);
-
     alert("已儲存到採購明細（日本預購）");
 
-    // 可選：儲存後清空表單
+    // 儲存後清空表單（保留 hidden）
     document.querySelectorAll("input").forEach(input => {
-      if (input.type !== "hidden") input.value = "";
+      if (input.type !== "hidden" && input.id !== "preImg") input.value = "";
     });
-
     document.getElementById('preQty').value = 1;
+
+    // 重置買手按鈕
+    const buttons = document.querySelectorAll('#preBuyerGroup .btn-opt');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    document.getElementById('preRayCardOptions').style.display = 'none';
+
+    // 重畫列表
+    renderJPPreorders();
   }
-</script>
-  
+
+  /* =========================
+     下方列表：更新欄位 / Ray 卡片 / 已買
+     ========================= */
+
+  function updateOrderField(id, field, rawValue, valueType = 'string') {
+    const list = loadOrders();
+    const idx = list.findIndex(o => o.id === id);
+    if (idx === -1) return;
+
+    let value = rawValue;
+
+    if (valueType === 'number') {
+      if (rawValue === '') {
+        value = null;
+      } else {
+        value = Number(rawValue);
+        if (Number.isNaN(value)) value = null;
+      }
+    } else if (valueType === 'int') {
+      if (rawValue === '') {
+        value = null;
+      } else {
+        value = parseInt(rawValue, 10);
+        if (Number.isNaN(value)) value = null;
+      }
+    } else if (valueType === 'bool') {
+      value = !!rawValue;
+    } else {
+      value = rawValue.trim();
+    }
+
+    list[idx][field] = value;
+    saveOrdersToStorage(list);
+
+    // 買手改成 Ray 或不是 Ray，要更新 Ray 卡片欄位顯示
+    if (field === 'buyer') {
+      renderJPPreorders();
+    }
+  }
+
+  function updateOrderExtraField(id, key, rawValue) {
+    const list = loadOrders();
+    const idx = list.findIndex(o => o.id === id);
+    if (idx === -1) return;
+
+    if (!list[idx].extra) list[idx].extra = {};
+    list[idx].extra[key] = rawValue.trim();
+    saveOrdersToStorage(list);
+  }
+
+  function toggleBought(id, checked) {
+    updateOrderField(id, 'isBought', checked, 'bool');
+    renderJPPreorders();
+  }
+
+  /* =========================
+     下方列表：渲染日本預購
+     ========================= */
+
+  function renderJPPreorders() {
+    const container = document.getElementById('preOrderList');
+    const emptyState = document.getElementById('jpEmptyState');
+    container.innerHTML = '';
+
+    const list = loadOrders().filter(o => o.type === 'preorder' && o.country === 'JP');
+
+    if (list.length === 0) {
+      emptyState.style.display = 'block';
+      return;
+    } else {
+      emptyState.style.display = 'none';
+    }
+
+    // 最新在上
+    list.sort((a, b) => (a.id < b.id ? 1 : -1));
+
+    list.forEach(order => {
+      const div = document.createElement('div');
+      div.className = 'order-card';
+
+      const costVal = order.cost != null ? order.cost : '';
+      const sellVal = order.sellPrice != null ? order.sellPrice : '';
+      const isBought = !!order.isBought;
+      const buyer = order.buyer || '';
+      const rayCard = order.extra && order.extra.rayCard ? order.extra.rayCard : '';
+
+      // Ray 信用卡欄位只有 buyer = Ray 時顯示
+      const rayCardField = `
+        <div class="field" ${buyer === 'Ray' ? '' : 'style="display:none;"'}>
+          <span class="field-label">Ray 信用卡</span>
+          <select
+            class="field-select"
+            onchange="updateOrderExtraField('${order.id}', 'rayCard', this.value)"
+          >
+            <option value="">未指定</option>
+            <option value="na爸卡" ${rayCard === 'na爸卡' ? 'selected' : ''}>na爸卡</option>
+            <option value="ray卡" ${rayCard === 'ray卡' ? 'selected' : ''}>ray卡</option>
+            <option value="qp卡" ${rayCard === 'qp卡' ? 'selected' : ''}>qp卡</option>
+          </select>
+        </div>
+      `;
+
+      div.innerHTML = `
+        <div class="order-title-row">
+          <input
+            class="order-name-input"
+            value="${order.name || ''}"
+            placeholder="商品名稱"
+            oninput="updateOrderField('${order.id}', 'name', this.value, 'string')"
+          />
+          <span class="badge ${isBought ? 'badge--bought' : ''}">
+            ${isBought ? '已買' : '未買'}
+          </span>
+        </div>
+
+        <div class="order-fields">
+          <div class="field">
+            <span class="field-label">數量</span>
+            <input
+              class="field-input"
+              type="number"
+              min="1"
+              value="${order.qty != null ? order.qty : 1}"
+              oninput="updateOrderField('${order.id}', 'qty', this.value, 'int')"
+            />
+          </div>
+
+          <div class="field">
+            <span class="field-label">顧客</span>
+            <input
+              class="field-input"
+              type="text"
+              value="${order.customer || ''}"
+              oninput="updateOrderField('${order.id}', 'customer', this.value, 'string')"
+            />
+          </div>
+
+          <div class="field">
+            <span class="field-label">買手</span>
+            <select
+              class="field-select"
+              onchange="updateOrderField('${order.id}', 'buyer', this.value, 'string')"
+            >
+              <option value="">未指定</option>
+              <option value="Ray"   ${buyer === 'Ray'   ? 'selected' : ''}>Ray</option>
+              <option value="Nana"  ${buyer === 'Nana'  ? 'selected' : ''}>Nana</option>
+              <option value="Cupid" ${buyer === 'Cupid' ? 'selected' : ''}>Cupid</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <span class="field-label">地點</span>
+            <input
+              class="field-input"
+              type="text"
+              value="${order.loc || ''}"
+              oninput="updateOrderField('${order.id}', 'loc', this.value, 'string')"
+            />
+          </div>
+
+          <div class="field">
+            <span class="field-label">成本 (¥)</span>
+            <input
+              class="field-input"
+              type="number"
+              value="${costVal}"
+              oninput="updateOrderField('${order.id}', 'cost', this.value, 'number')"
+            />
+          </div>
+
+          <div class="field">
+            <span class="field-label">售價 (NT$)</span>
+            <input
+              class="field-input"
+              type="number"
+              value="${sellVal}"
+              oninput="updateOrderField('${order.id}', 'sellPrice', this.value, 'number')"
+            />
+          </div>
+
+          ${rayCardField}
+        </div>
+
+        <div class="order-footer-row">
+          <label class="toggle-bought">
+            <input
+              type="checkbox"
+              ${isBought ? 'checked' : ''}
+              onchange="toggleBought('${order.id}', this.checked)"
+            />
+            <span>${isBought ? '已標記為已買' : '點一下標記為已買'}</span>
+          </label>
+        </div>
+      `;
+
+      container.appendChild(div);
+    });
+  }
+
+  // 初始載入時，把日本預購清單畫出來
+  renderJPPreorders();
+  </script>
 </body>
 </html>
