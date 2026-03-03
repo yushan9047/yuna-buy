@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>新增現場採購（韓國）</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header-bar">
+    <button class="back-btn" type="button" onclick="window.history.back()">← 返回</button>
+    <h2>🇰🇷 新增現場採購（韓國）</h2>
+  </div>
+
+  <main class="page-body">
+    <div class="card">
+
+      <!-- 商品照片 -->
+      <div class="form-group">
+        <label for="pImg">📷 商品照片</label>
+        <input type="file" id="pImg" accept="image/*">
+      </div>
+
+      <!-- 商品品名 -->
+      <div class="form-group">
+        <label for="pName">📦 品名</label>
+        <input type="text" id="pName" placeholder="請輸入品名">
+      </div>
+
+      <!-- 含稅成本（韓元） -->
+      <div class="form-group">
+        <label for="pPriceTax">💰 含稅成本 (₩)</label>
+        <input type="number" id="pPriceTax" placeholder="0" min="0" step="1">
+      </div>
+
+      <!-- 退稅設定 -->
+      <div class="form-group">
+        <label>🏷️ 退稅設定</label>
+        <div class="btn-group">
+          <button id="buyTaxBtnYes" class="btn-opt" type="button"
+                  onclick="toggleBuyTax(true)">有退稅</button>
+          <button id="buyTaxBtnNo" class="btn-opt active" type="button"
+                  onclick="toggleBuyTax(false)">無退稅</button>
+        </div>
+        <input type="hidden" id="buyIsTaxFree" value="false">
+      </div>
+
+      <!-- 稅率 + 退稅價 -->
+      <div style="display:flex; gap:12px;">
+        <div class="form-group" id="buyTaxRateGroup"
+             style="flex:1; display:none;">
+          <label for="buyTaxRate">％ 稅率</label>
+          <input type="number" id="buyTaxRate" value="10" min="0" step="0.1">
+        </div>
+
+        <div class="form-group" id="buyTaxFreeGroup"
+             style="flex:1; display:none;">
+          <label for="buyTaxFreePrice">💸 退稅價 (₩)</label>
+          <input type="number" id="buyTaxFreePrice" placeholder="0" min="0">
+        </div>
+      </div>
+
+      <!-- 販售價格 -->
+      <div class="form-group">
+        <label for="pPriceSell">💎 販售價格 (NT$)</label>
+        <input type="number" id="pPriceSell" placeholder="0" min="0">
+      </div>
+
+      <!-- 數量 + 地點 -->
+      <div style="display:flex; gap:12px;">
+        <div class="form-group" style="flex:1">
+          <label for="pQty">🔢 數量</label>
+          <input type="number" id="pQty" value="1" min="1">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label for="pLoc">📍 地點</label>
+          <input type="text" id="pLoc" placeholder="例如：明洞 / 弘大">
+        </div>
+      </div>
+
+      <!-- 顧客 -->
+      <div class="form-group">
+        <label for="pCustomer">👤 顧客名</label>
+        <input type="text" id="pCustomer" placeholder="客名">
+      </div>
+
+      <!-- 買手（只有 Nana / Cupid） -->
+      <div class="form-group">
+        <label>🧤 負責買手</label>
+        <div class="btn-group" id="buyBuyerGroup">
+          <button class="btn-opt" type="button"
+                  onclick="setBuyer('Nana', this)">Nana</button>
+          <button class="btn-opt" type="button"
+                  onclick="setBuyer('Cupid', this)">Cupid</button>
+        </div>
+        <input type="hidden" id="pBuyer">
+      </div>
+
+      <!-- 儲存 -->
+      <button class="submit-btn" type="button"
+              onclick="saveData()">🚀 確認儲存</button>
+
+    </div>
+  </main>
+
+  <script>
+    function toggleBuyTax(hasTaxFree) {
+      const yesBtn = document.getElementById('buyTaxBtnYes');
+      const noBtn = document.getElementById('buyTaxBtnNo');
+      const taxRateGroup = document.getElementById('buyTaxRateGroup');
+      const taxFreeGroup = document.getElementById('buyTaxFreeGroup');
+      const isTaxFreeInput = document.getElementById('buyIsTaxFree');
+
+      if (hasTaxFree) {
+        isTaxFreeInput.value = 'true';
+        yesBtn.classList.add('active');
+        noBtn.classList.remove('active');
+        taxRateGroup.style.display = 'block';
+        taxFreeGroup.style.display = 'block';
+      } else {
+        isTaxFreeInput.value = 'false';
+        yesBtn.classList.remove('active');
+        noBtn.classList.add('active');
+        taxRateGroup.style.display = 'none';
+        taxFreeGroup.style.display = 'none';
+        document.getElementById('buyTaxFreePrice').value = '';
+      }
+    }
+
+    function setBuyer(name, btnEl) {
+      const buyerInput = document.getElementById('pBuyer');
+      buyerInput.value = name;
+
+      const group = document.getElementById('buyBuyerGroup');
+      const buttons = group.querySelectorAll('.btn-opt');
+      buttons.forEach(btn => btn.classList.remove('active'));
+
+      btnEl.classList.add('active');
+    }
+
+    function saveData() {
+      const data = {
+        country: "KR",
+        name: document.getElementById('pName').value.trim(),
+        priceTax: Number(document.getElementById('pPriceTax').value || 0),
+        isTaxFree: document.getElementById('buyIsTaxFree').value === 'true',
+        taxRate: Number(document.getElementById('buyTaxRate').value || 0),
+        taxFreePrice: Number(document.getElementById('buyTaxFreePrice').value || 0),
+        sellPrice: Number(document.getElementById('pPriceSell').value || 0),
+        qty: Number(document.getElementById('pQty').value || 1),
+        loc: document.getElementById('pLoc').value.trim(),
+        customer: document.getElementById('pCustomer').value.trim(),
+        buyer: document.getElementById('pBuyer').value
+      };
+
+      if (!data.name) {
+        alert("請輸入品名");
+        return;
+      }
+
+      if (!data.priceTax) {
+        alert("請輸入含稅成本");
+        return;
+      }
+
+      console.log("韓國現場採購資料：", data);
+      alert("已暫存（目前為 console.log，可接後端）");
+    }
+  </script>
+
+</body>
+</html>
