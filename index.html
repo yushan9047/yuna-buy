@@ -16,6 +16,7 @@
       --amber: #f59e0b;
       --pink: #ec4899;
       --purple: #8b5cf6;
+      --red: #f97373;
     }
 
     * {
@@ -37,7 +38,7 @@
 
     .app {
       width: 100%;
-      max-width: 640px;
+      max-width: 720px;
     }
 
     .app-header {
@@ -65,7 +66,7 @@
 
     @media (min-width: 640px) {
       .card-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
 
@@ -105,9 +106,19 @@
     }
 
     .card-title {
-      font-size: 1.05rem;
+      font-size: 1.02rem;
       font-weight: 700;
       margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-flag {
+      padding: 2px 6px;
+      font-size: 0.7rem;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.06);
     }
 
     .card-desc {
@@ -131,10 +142,15 @@
     }
 
     /* 不同卡片顏色 */
-    .card--onsite {
+    .card--onsite-jp {
       background: linear-gradient(135deg, #eff6ff, #dbeafe);
     }
-    .card--onsite::after { background: var(--primary); }
+    .card--onsite-jp::after { background: var(--primary); }
+
+    .card--onsite-kr {
+      background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    }
+    .card--onsite-kr::after { background: var(--red); }
 
     .card--preorder {
       background: linear-gradient(135deg, #ecfdf3, #dcfce7);
@@ -161,21 +177,40 @@
   <div class="app">
     <header class="app-header">
       <h1 class="app-title">Yuna 代購系統</h1>
-      <p class="app-subtitle">快速建立訂單、追蹤採購與顧客資料</p>
+      <p class="app-subtitle">日本 / 韓國現場採購、預購與顧客管理</p>
     </header>
 
     <main>
       <div class="card-grid">
-        <!-- 新增現場採購 -->
-        <a class="card-link" href="onsite-new.html">
-          <div class="card card--onsite">
+        <!-- 🗾 日本 現場採購 -->
+        <a class="card-link" href="onsite-jp.html">
+          <div class="card card--onsite-jp">
             <div>
-              <div class="card-title">新增現場採購</div>
+              <div class="card-title">
+                新增現場採購
+                <span class="card-flag">JP</span>
+              </div>
               <div class="card-desc">
-                逛街時現場幫客人買，快速新增單筆或多筆商品。
+                日本代購用，逛街時快速新增現場採購商品。
               </div>
             </div>
-            <div class="card-tag">On-site Order</div>
+            <div class="card-tag">On-site Japan</div>
+          </div>
+        </a>
+
+        <!-- 🇰🇷 韓國 現場採購 -->
+        <a class="card-link" href="onsite-kr.html">
+          <div class="card card--onsite-kr">
+            <div>
+              <div class="card-title">
+                新增現場採購
+                <span class="card-flag">KR</span>
+              </div>
+              <div class="card-desc">
+                韓國代購用，明洞 / 弘大現場採購直接記錄。
+              </div>
+            </div>
+            <div class="card-tag">On-site Korea</div>
           </div>
         </a>
 
@@ -185,33 +220,33 @@
             <div>
               <div class="card-title">預購商品</div>
               <div class="card-desc">
-                先開預購表，統一整理款式、數量與收款狀態。
+                開團前先整理品項、數量與收款狀態。
               </div>
             </div>
             <div class="card-tag">Pre-order</div>
           </div>
         </a>
 
-        <!-- 採購明細（現場採購新增之商品） -->
+        <!-- 採購明細 -->
         <a class="card-link" href="purchase-list.html">
           <div class="card card--purchase-list">
             <div>
               <div class="card-title">採購明細</div>
               <div class="card-desc">
-                查看、編輯現場採購新增的所有商品清單。
+                查看現場採購新增的所有商品與成本。
               </div>
             </div>
             <div class="card-tag">Purchase List</div>
           </div>
         </a>
 
-        <!-- yuna 明細 -->
+        <!-- Yuna 明細 -->
         <a class="card-link" href="yuna-report.html">
           <div class="card card--yuna">
             <div>
               <div class="card-title">Yuna 明細</div>
               <div class="card-desc">
-                統計每趟行程的成本、利潤與收支狀況。
+                統計單趟 / 全部行程的成本與利潤。
               </div>
             </div>
             <div class="card-tag">Yuna Report</div>
@@ -224,7 +259,7 @@
             <div>
               <div class="card-title">顧客明細</div>
               <div class="card-desc">
-                管理顧客聯絡方式、偏好與歷史訂單紀錄。
+                管理顧客聯絡方式、偏好與歷史訂單。
               </div>
             </div>
             <div class="card-tag">Customer</div>
