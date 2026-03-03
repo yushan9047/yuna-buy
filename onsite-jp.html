@@ -116,99 +116,121 @@
     </div>
   </main>
 
-  <script>
-    // 切換退稅邏輯
-    function toggleBuyTax(hasTaxFree) {
-      const yesBtn = document.getElementById('buyTaxBtnYes');
-      const noBtn = document.getElementById('buyTaxBtnNo');
-      const taxRateGroup = document.getElementById('buyTaxRateGroup');
-      const taxFreeGroup = document.getElementById('buyTaxFreeGroup');
-      const isTaxFreeInput = document.getElementById('buyIsTaxFree');
+<script>
+  const STORAGE_KEY = 'yunaOrders';
 
-      if (hasTaxFree) {
-        isTaxFreeInput.value = 'true';
-        yesBtn.classList.add('active');
-        noBtn.classList.remove('active');
-        taxRateGroup.style.display = 'block';
-        taxFreeGroup.style.display = 'block';
-      } else {
-        isTaxFreeInput.value = 'false';
-        yesBtn.classList.remove('active');
-        noBtn.classList.add('active');
-        taxRateGroup.style.display = 'none';
-        taxFreeGroup.style.display = 'none';
-        // 清空退稅相關欄位
-        document.getElementById('buyTaxRate').value = 10;
-        document.getElementById('buyTaxFreePrice').value = '';
-      }
+  function addOrderToStorage(order) {
+    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    list.push(order);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
+
+  function toggleBuyTax(hasTaxFree) {
+    const yesBtn = document.getElementById('buyTaxBtnYes');
+    const noBtn = document.getElementById('buyTaxBtnNo');
+    const taxRateGroup = document.getElementById('buyTaxRateGroup');
+    const taxFreeGroup = document.getElementById('buyTaxFreeGroup');
+    const isTaxFreeInput = document.getElementById('buyIsTaxFree');
+
+    if (hasTaxFree) {
+      isTaxFreeInput.value = 'true';
+      yesBtn.classList.add('active');
+      noBtn.classList.remove('active');
+      taxRateGroup.style.display = 'block';
+      taxFreeGroup.style.display = 'block';
+    } else {
+      isTaxFreeInput.value = 'false';
+      yesBtn.classList.remove('active');
+      noBtn.classList.add('active');
+      taxRateGroup.style.display = 'none';
+      taxFreeGroup.style.display = 'none';
+      document.getElementById('buyTaxRate').value = 10;
+      document.getElementById('buyTaxFreePrice').value = '';
+    }
+  }
+
+  function setBuyer(name, btnEl) {
+    const buyerInput = document.getElementById('pBuyer');
+    buyerInput.value = name;
+
+    const group = document.getElementById('buyBuyerGroup');
+    const buttons = group.querySelectorAll('.btn-opt');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    btnEl.classList.add('active');
+
+    const rayCardBox = document.getElementById('rayCardOptions');
+    if (name === 'Ray') {
+      rayCardBox.style.display = 'block';
+    } else {
+      rayCardBox.style.display = 'none';
+      document.getElementById('pRayCard').value = '';
+      const rayButtons = rayCardBox.querySelectorAll('.btn-opt');
+      rayButtons.forEach(btn => btn.classList.remove('active'));
+    }
+  }
+
+  function setRayCard(cardName, btnEl) {
+    const cardInput = document.getElementById('pRayCard');
+    cardInput.value = cardName;
+
+    const rayCardBox = document.getElementById('rayCardOptions');
+    const buttons = rayCardBox.querySelectorAll('.btn-opt');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    btnEl.classList.add('active');
+  }
+
+  function saveData() {
+    const data = {
+      name: document.getElementById('pName').value.trim(),
+      priceTax: Number(document.getElementById('pPriceTax').value || 0),
+      isTaxFree: document.getElementById('buyIsTaxFree').value === 'true',
+      taxRate: Number(document.getElementById('buyTaxRate').value || 0),
+      taxFreePrice: Number(document.getElementById('buyTaxFreePrice').value || 0),
+      sellPrice: Number(document.getElementById('pPriceSell').value || 0),
+      qty: Number(document.getElementById('pQty').value || 1),
+      loc: document.getElementById('pLoc').value.trim(),
+      customer: document.getElementById('pCustomer').value.trim(),
+      buyer: document.getElementById('pBuyer').value,
+      rayCard: document.getElementById('pRayCard').value
+    };
+
+    if (!data.name) {
+      alert('請輸入品名');
+      return;
+    }
+    if (!data.priceTax) {
+      alert('請輸入含稅成本');
+      return;
+    }
+    if (!data.buyer) {
+      alert('請選擇負責買手');
+      return;
     }
 
-    // 設定買手
-    function setBuyer(name, btnEl) {
-      const buyerInput = document.getElementById('pBuyer');
-      buyerInput.value = name;
-
-      // 切換 active 樣式
-      const group = document.getElementById('buyBuyerGroup');
-      const buttons = group.querySelectorAll('.btn-opt');
-      buttons.forEach(btn => btn.classList.remove('active'));
-      btnEl.classList.add('active');
-
-      // Ray 才顯示卡片選擇
-      const rayCardBox = document.getElementById('rayCardOptions');
-      if (name === 'Ray') {
-        rayCardBox.style.display = 'block';
-      } else {
-        rayCardBox.style.display = 'none';
-        document.getElementById('pRayCard').value = '';
-        // 同時把卡片按鈕 active 清掉
-        const rayButtons = rayCardBox.querySelectorAll('.btn-opt');
-        rayButtons.forEach(btn => btn.classList.remove('active'));
+    const order = {
+      id: 'O-' + Date.now().toString(36),
+      type: 'onsite',
+      country: 'JP',
+      name: data.name,
+      qty: data.qty,
+      buyer: data.buyer,
+      customer: data.customer,
+      loc: data.loc,
+      currency: 'JPY',
+      cost: data.priceTax,
+      sellPrice: data.sellPrice || null,
+      // 額外 JP 專用資訊
+      extra: {
+        isTaxFree: data.isTaxFree,
+        taxRate: data.taxRate,
+        taxFreePrice: data.taxFreePrice,
+        rayCard: data.rayCard
       }
-    }
+    };
 
-    // 設定 Ray 使用哪張卡
-    function setRayCard(cardName, btnEl) {
-      const cardInput = document.getElementById('pRayCard');
-      cardInput.value = cardName;
-
-      const rayCardBox = document.getElementById('rayCardOptions');
-      const buttons = rayCardBox.querySelectorAll('.btn-opt');
-      buttons.forEach(btn => btn.classList.remove('active'));
-      btnEl.classList.add('active');
-    }
-
-    // 儲存資料（範例：先用 console.log，之後你可以改成存到 DB / localStorage）
-    function saveData() {
-      const data = {
-        name: document.getElementById('pName').value.trim(),
-        priceTax: Number(document.getElementById('pPriceTax').value || 0),
-        isTaxFree: document.getElementById('buyIsTaxFree').value === 'true',
-        taxRate: Number(document.getElementById('buyTaxRate').value || 0),
-        taxFreePrice: Number(document.getElementById('buyTaxFreePrice').value || 0),
-        sellPrice: Number(document.getElementById('pPriceSell').value || 0),
-        qty: Number(document.getElementById('pQty').value || 1),
-        loc: document.getElementById('pLoc').value.trim(),
-        customer: document.getElementById('pCustomer').value.trim(),
-        buyer: document.getElementById('pBuyer').value,
-        rayCard: document.getElementById('pRayCard').value
-      };
-
-      // TODO: 這裡改成你要的實際儲存邏輯
-      console.log('現場採購資料：', data);
-
-      // 簡單檢查：至少要有品名跟含稅成本
-      if (!data.name) {
-        alert('請輸入品名');
-        return;
-      }
-      if (!data.priceTax) {
-        alert('請輸入含稅成本');
-        return;
-      }
-
-      alert('已暫存（目前只 console.log），之後可接後端或 localStorage。');
-    }
-  </script>
+    addOrderToStorage(order);
+    alert('已儲存到採購明細（日本現場採購）');
+  }
+</script>
 </body>
 </html>
