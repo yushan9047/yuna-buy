@@ -1,0 +1,356 @@
+/* =========================
+   全站共用變數 & 基底
+   ========================= */
+:root {
+  --bg: #f9fafb;
+  --text-main: #111827;
+  --text-sub: #6b7280;
+  --card-radius: 18px;
+  --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
+
+  --primary: #3b82f6;
+  --green: #22c55e;
+  --amber: #f59e0b;
+  --pink: #ec4899;
+  --purple: #8b5cf6;
+  --red: #f97373;
+
+  --soft: #f3f4f6;
+  --soft-border: #e5e7eb;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  background: var(--bg);
+  color: var(--text-main);
+}
+
+/* =========================
+   首頁：外層容器
+   ========================= */
+.app {
+  width: 100%;
+  max-width: 720px;
+  margin: 24px auto 40px;
+  padding: 0 16px;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.app-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.app-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-sub);
+}
+
+/* 卡片格線（首頁選單） */
+.card-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+@media (min-width: 640px) {
+  .card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* =========================
+   共用卡片樣式（首頁 & 內頁）
+   ========================= */
+.card {
+  border-radius: var(--card-radius);
+  padding: 18px 16px;
+  box-shadow: var(--shadow-soft);
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 92px;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.12s ease-out,
+    box-shadow 0.12s ease-out,
+    filter 0.12s ease-out;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  right: -24px;
+  bottom: -24px;
+  width: 80px;
+  height: 80px;
+  opacity: 0.15;
+  border-radius: 999px;
+  transform: rotate(-8deg);
+}
+
+.card-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-flag {
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.card-desc {
+  font-size: 0.82rem;
+  color: var(--text-sub);
+}
+
+.card-tag {
+  margin-top: 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10);
+  filter: brightness(1.03);
+}
+
+/* 首頁不同選單卡片配色 */
+.card--onsite-jp {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+}
+.card--onsite-jp::after {
+  background: var(--primary);
+}
+
+.card--onsite-kr {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+}
+.card--onsite-kr::after {
+  background: var(--red);
+}
+
+.card--preorder {
+  background: linear-gradient(135deg, #ecfdf3, #dcfce7);
+}
+.card--preorder::after {
+  background: var(--green);
+}
+
+.card--purchase-list {
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+}
+.card--purchase-list::after {
+  background: var(--amber);
+}
+
+.card--yuna {
+  background: linear-gradient(135deg, #fdf2ff, #fae8ff);
+}
+.card--yuna::after {
+  background: var(--pink);
+}
+
+.card--customer {
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+}
+.card--customer::after {
+  background: var(--purple);
+}
+
+/* =========================
+   內頁（JP / KR 現場採購）
+   ========================= */
+
+/* 頂部返回列 */
+.header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.header-bar h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* 返回按鈕 */
+.back-btn {
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  font-size: 0.9rem;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.back-btn:hover {
+  background: var(--soft);
+}
+
+/* 內頁內容容器 */
+.page-body {
+  width: 100%;
+  max-width: 640px;
+  margin: 16px auto 32px;
+  padding: 0 16px;
+}
+
+/* 內頁卡片再多一點 padding */
+.page-body .card {
+  padding: 18px 18px 20px;
+}
+
+/* 表單欄位 */
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text-main);
+}
+
+/* 文字 / 數字 / 檔案輸入 */
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="file"] {
+  width: 100%;
+  font-size: 0.9rem;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--soft-border);
+  background: #ffffff;
+  outline: none;
+}
+
+.form-group input[type="file"] {
+  padding: 6px 6px;
+  font-size: 0.82rem;
+}
+
+.form-group input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2);
+}
+
+/* 小排版工具：兩欄 */
+.row-two {
+  display: flex;
+  gap: 12px;
+}
+
+/* 按鈕群組（退稅、買手選擇） */
+.btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 小選項按鈕 */
+.btn-opt {
+  border-radius: 999px;
+  border: 1px solid var(--soft-border);
+  background: #ffffff;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--text-main);
+  transition:
+    background 0.12s ease-out,
+    color 0.12s ease-out,
+    box-shadow 0.12s ease-out,
+    border-color 0.12s ease-out;
+}
+
+.btn-opt:hover {
+  background: var(--soft);
+}
+
+.btn-opt.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.15);
+}
+
+/* Ray 卡片選擇區（只在 JP 頁會用到） */
+.ray-card-box {
+  background: var(--soft);
+  padding: 15px;
+  border-radius: 25px;
+  margin-top: 15px;
+  border: 1px solid var(--soft-border);
+}
+
+/* 儲存按鈕 */
+.submit-btn {
+  margin-top: 8px;
+  width: 100%;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  cursor: pointer;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.submit-btn:hover {
+  filter: brightness(1.05);
+}
+
+.submit-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+}
