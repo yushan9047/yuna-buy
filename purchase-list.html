@@ -2,16 +2,211 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>採購明細</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .filter-card {
+      margin-bottom: 16px;
+    }
+
+    .order-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .order-card {
+      border-radius: 16px;
+      border: 1px solid var(--soft-border);
+      padding: 10px 12px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .order-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .order-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .order-type-badges {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .badge--onsite {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .badge--preorder {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .badge--country {
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+
+    .order-meta {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+    }
+
+    .order-meta span {
+      white-space: nowrap;
+    }
+
+    .empty-state {
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
+
   <div class="header-bar">
-    <button class="back-btn" onclick="window.history.back()">← 返回</button>
+    <button class="back-btn" type="button" onclick="window.history.back()">← 返回</button>
     <h2>採購明細</h2>
   </div>
 
-  <div id="allList"></div> <!-- 顯示採購明細 -->
+  <main class="page-body">
+
+    <!-- 篩選 -->
+    <div class="card filter-card">
+      <div class="form-group">
+        <label>📂 查看內容</label>
+        <div class="btn-group" id="filterGroup">
+          <button type="button" class="btn-opt active" onclick="setFilter('all', this)">全部</button>
+          <button type="button" class="btn-opt" onclick="setFilter('onsite', this)">現場採購</button>
+          <button type="button" class="btn-opt" onclick="setFilter('preorder', this)">預購清單</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 清單 -->
+    <div class="card">
+      <div class="form-group" style="margin-bottom: 10px;">
+        <label>🧾 採購清單（不分日韓）</label>
+      </div>
+
+      <div id="orderList" class="order-list"></div>
+      <div id="emptyState" class="empty-state" style="display:none;">
+        目前沒有符合條件的資料。
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'yunaOrders';
+
+    function loadOrders() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      } catch (e) {
+        console.error('讀取 yunaOrders 失敗', e);
+        return [];
+      }
+    }
+
+    let orders = loadOrders();
+    let currentFilter = 'all';
+
+    function setFilter(type, btnEl) {
+      currentFilter = type;
+
+      const group = document.getElementById('filterGroup');
+      const buttons = group.querySelectorAll('.btn-opt');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      btnEl.classList.add('active');
+
+      renderList();
+    }
+
+    function renderList() {
+      const container = document.getElementById('orderList');
+      const emptyState = document.getElementById('emptyState');
+      container.innerHTML = '';
+
+      const filtered = orders.filter(o => {
+        if (currentFilter === 'onsite') return o.type === 'onsite';
+        if (currentFilter === 'preorder') return o.type === 'preorder';
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+      } else {
+        emptyState.style.display = 'none';
+      }
+
+      filtered.forEach(order => {
+        const div = document.createElement('div');
+        div.className = 'order-card';
+
+        const typeLabel = order.type === 'onsite' ? '現場採購' : '預購';
+        const typeBadgeClass = order.type === 'onsite' ? 'badge--onsite' : 'badge--preorder';
+
+        // 成本文字：主幣別 + 第二幣別（如果有）
+        let costText = '-';
+        if (order.cost != null && order.currency) {
+          costText = `${order.cost} ${order.currency}`;
+        }
+        if (order.cost2 != null && order.currency2) {
+          costText += ` / ${order.cost2} ${order.currency2}`;
+        }
+
+        div.innerHTML = `
+          <div class="order-title-row">
+            <div class="order-name">${order.name}</div>
+            <div class="order-type-badges">
+              <span class="badge ${typeBadgeClass}">${typeLabel}</span>
+              <span class="badge badge--country">${order.country || '-'}</span>
+            </div>
+          </div>
+          <div class="order-meta">
+            <span>數量：${order.qty ?? '-'}</span>
+            <span>買手：${order.buyer || '-'}</span>
+            <span>顧客：${order.customer || '-'}</span>
+            <span>地點：${order.loc || '-'}</span>
+            <span>成本：${costText}</span>
+            <span>售價：${order.sellPrice != null ? order.sellPrice + ' NT$' : '-'}</span>
+          </div>
+        `;
+
+        container.appendChild(div);
+      });
+    }
+
+    renderList();
+  </script>
 </body>
 </html>
