@@ -32,11 +32,22 @@
       justify-content: space-between;
       align-items: center;
       gap: 8px;
+      margin-bottom: 4px;
     }
 
-    .order-name {
+    .order-name-input {
+      width: 100%;
       font-size: 0.95rem;
       font-weight: 600;
+      border: none;
+      background: transparent;
+      padding: 2px 4px;
+      border-radius: 8px;
+    }
+
+    .order-name-input:focus {
+      outline: 1px solid var(--primary);
+      background: #eff6ff;
     }
 
     .order-type-badges {
@@ -70,16 +81,51 @@
       color: #4b5563;
     }
 
-    .order-meta {
+    .order-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 10px;
       font-size: 0.8rem;
-      color: var(--text-sub);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px 16px;
     }
 
-    .order-meta span {
-      white-space: nowrap;
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .field-label {
+      color: var(--text-sub);
+      font-size: 0.74rem;
+    }
+
+    .field-input,
+    .field-select {
+      width: 100%;
+      font-size: 0.8rem;
+      padding: 4px 6px;
+      border-radius: 8px;
+      border: 1px solid var(--soft-border);
+      background: #ffffff;
+    }
+
+    .field-input:focus,
+    .field-select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px rgba(59,130,246,0.15);
+      background: #f9fafb;
+    }
+
+    .field-input[readonly] {
+      background: #f9fafb;
+      color: var(--text-sub);
+    }
+
+    @media (min-width: 700px) {
+      .order-fields {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
     }
 
     .order-actions {
@@ -147,7 +193,7 @@
     <!-- 清單 -->
     <div class="card">
       <div class="form-group" style="margin-bottom: 10px;">
-        <label>🧾 採購清單（不分日韓）</label>
+        <label>🧾 採購清單（可直接點欄位編輯）</label>
       </div>
 
       <div id="orderList" class="order-list"></div>
@@ -187,6 +233,67 @@
       renderList();
     }
 
+    // 更新一般欄位（top-level）
+    function updateOrderField(id, field, rawValue, valueType = 'string') {
+      const idx = orders.findIndex(o => o.id === id);
+      if (idx === -1) return;
+
+      let value = rawValue;
+
+      if (valueType === 'number') {
+        if (rawValue === '') {
+          value = null;
+        } else {
+          value = Number(rawValue);
+          if (Number.isNaN(value)) value = null;
+        }
+      } else if (valueType === 'int') {
+        if (rawValue === '') {
+          value = null;
+        } else {
+          value = parseInt(rawValue, 10);
+          if (Number.isNaN(value)) value = null;
+        }
+      } else {
+        value = rawValue.trim();
+      }
+
+      orders[idx][field] = value;
+      saveOrdersToStorage(orders);
+
+      // 如果改的是 buyer，要讓 Ray 卡片那格顯示/隱藏，所以重畫一次
+      if (field === 'buyer') {
+        renderList();
+      }
+    }
+
+    // 更新 extra 裡面的欄位（給 Ray 卡片用）
+    function updateOrderExtraField(id, key, rawValue) {
+      const idx = orders.findIndex(o => o.id === id);
+      if (idx === -1) return;
+
+      if (!orders[idx].extra) {
+        orders[idx].extra = {};
+      }
+      orders[idx].extra[key] = rawValue.trim();
+      saveOrdersToStorage(orders);
+    }
+
+    function deleteOrder(id) {
+      const idx = orders.findIndex(o => o.id === id);
+      if (idx === -1) {
+        alert('找不到這筆資料');
+        return;
+      }
+
+      const ok = confirm('確定要刪除這筆資料嗎？此動作無法復原。');
+      if (!ok) return;
+
+      orders.splice(idx, 1);
+      saveOrdersToStorage(orders);
+      renderList();
+    }
+
     function renderList() {
       const container = document.getElementById('orderList');
       const emptyState = document.getElementById('emptyState');
@@ -212,35 +319,155 @@
         const typeLabel = order.type === 'onsite' ? '現場採購' : '預購';
         const typeBadgeClass = order.type === 'onsite' ? 'badge--onsite' : 'badge--preorder';
 
-        // 成本文字：主幣別 + 第二幣別（如果有）
-        let costText = '-';
-        if (order.cost != null && order.currency) {
-          costText = `${order.cost} ${order.currency}`;
-        }
+        const mainCost = order.cost != null ? order.cost : '';
+        const sellPrice = order.sellPrice != null ? order.sellPrice : '';
+
+        let cost2Text = '';
         if (order.cost2 != null && order.currency2) {
-          costText += ` / ${order.cost2} ${order.currency2}`;
+          cost2Text = `${order.cost2} ${order.currency2}`;
+        }
+
+        const isJP = order.country === 'JP';
+        const buyer = order.buyer || '';
+
+        // 買手選項：JP → Ray/Nana/Cupid；KR → Nana/Cupid
+        let buyerOptionsHtml = '';
+        if (isJP) {
+          buyerOptionsHtml = `
+            <option value="">未指定</option>
+            <option value="Ray" ${buyer === 'Ray' ? 'selected' : ''}>Ray</option>
+            <option value="Nana" ${buyer === 'Nana' ? 'selected' : ''}>Nana</option>
+            <option value="Cupid" ${buyer === 'Cupid' ? 'selected' : ''}>Cupid</option>
+          `;
+        } else {
+          buyerOptionsHtml = `
+            <option value="">未指定</option>
+            <option value="Nana" ${buyer === 'Nana' ? 'selected' : ''}>Nana</option>
+            <option value="Cupid" ${buyer === 'Cupid' ? 'selected' : ''}>Cupid</option>
+          `;
+        }
+
+        const buyerSelectHtml = `
+          <div class="field">
+            <span class="field-label">買手</span>
+            <select
+              class="field-select"
+              onchange="updateOrderField('${order.id}', 'buyer', this.value, 'string')"
+            >
+              ${buyerOptionsHtml}
+            </select>
+          </div>
+        `;
+
+        // JP 專用 Ray 信用卡欄位（只有 country=JP 才會出現）
+        let cardFieldHtml = '';
+        if (isJP) {
+          const rayCard = (order.extra && order.extra.rayCard) ? order.extra.rayCard : '';
+          const displayStyle = buyer === 'Ray' ? '' : 'style="display:none;"';
+
+          cardFieldHtml = `
+            <div class="field" ${displayStyle}>
+              <span class="field-label">Ray 信用卡</span>
+              <select
+                class="field-select"
+                onchange="updateOrderExtraField('${order.id}', 'rayCard', this.value)"
+              >
+                <option value="">未指定</option>
+                <option value="na爸卡" ${rayCard === 'na爸卡' ? 'selected' : ''}>na爸卡</option>
+                <option value="ray卡" ${rayCard === 'ray卡' ? 'selected' : ''}>ray卡</option>
+                <option value="qp卡" ${rayCard === 'qp卡' ? 'selected' : ''}>qp卡</option>
+              </select>
+            </div>
+          `;
         }
 
         div.innerHTML = `
           <div class="order-title-row">
-            <div class="order-name">${order.name}</div>
+            <input
+              class="order-name-input"
+              value="${order.name || ''}"
+              placeholder="商品名稱"
+              oninput="updateOrderField('${order.id}', 'name', this.value, 'string')"
+            />
             <div class="order-type-badges">
               <span class="badge ${typeBadgeClass}">${typeLabel}</span>
               <span class="badge badge--country">${order.country || '-'}</span>
             </div>
           </div>
-          <div class="order-meta">
-            <span>數量：${order.qty ?? '-'}</span>
-            <span>買手：${order.buyer || '-'}</span>
-            <span>顧客：${order.customer || '-'}</span>
-            <span>地點：${order.loc || '-'}</span>
-            <span>成本：${costText}</span>
-            <span>售價：${order.sellPrice != null ? order.sellPrice + ' NT$' : '-'}</span>
+
+          <div class="order-fields">
+            <div class="field">
+              <span class="field-label">數量</span>
+              <input
+                class="field-input"
+                type="number"
+                min="0"
+                value="${order.qty != null ? order.qty : ''}"
+                oninput="updateOrderField('${order.id}', 'qty', this.value, 'int')"
+              />
+            </div>
+
+            ${buyerSelectHtml}
+
+            <div class="field">
+              <span class="field-label">顧客</span>
+              <input
+                class="field-input"
+                type="text"
+                value="${order.customer || ''}"
+                oninput="updateOrderField('${order.id}', 'customer', this.value, 'string')"
+              />
+            </div>
+
+            <div class="field">
+              <span class="field-label">地點</span>
+              <input
+                class="field-input"
+                type="text"
+                value="${order.loc || ''}"
+                oninput="updateOrderField('${order.id}', 'loc', this.value, 'string')"
+              />
+            </div>
+
+            <div class="field">
+              <span class="field-label">成本 (${order.currency || '-'})</span>
+              <input
+                class="field-input"
+                type="number"
+                value="${mainCost}"
+                oninput="updateOrderField('${order.id}', 'cost', this.value, 'number')"
+              />
+            </div>
+
+            <div class="field">
+              <span class="field-label">售價 (NT$)</span>
+              <input
+                class="field-input"
+                type="number"
+                value="${sellPrice}"
+                oninput="updateOrderField('${order.id}', 'sellPrice', this.value, 'number')"
+              />
+            </div>
+
+            ${cost2Text
+              ? `
+                <div class="field">
+                  <span class="field-label">第二成本</span>
+                  <input
+                    class="field-input"
+                    type="text"
+                    value="${cost2Text}"
+                    readonly
+                  />
+                </div>
+              `
+              : ''
+            }
+
+            ${cardFieldHtml}
           </div>
+
           <div class="order-actions">
-            <button class="order-action-btn" onclick="editOrder('${order.id}')">
-              ✏️ <span>編輯</span>
-            </button>
             <button class="order-action-btn order-action-btn--danger" onclick="deleteOrder('${order.id}')">
               🗑 <span>刪除</span>
             </button>
@@ -249,67 +476,6 @@
 
         container.appendChild(div);
       });
-    }
-
-    function findOrderIndexById(id) {
-      return orders.findIndex(o => o.id === id);
-    }
-
-    function editOrder(id) {
-      const idx = findOrderIndexById(id);
-      if (idx === -1) {
-        alert('找不到這筆資料');
-        return;
-      }
-      const o = orders[idx];
-
-      // 用 prompt 簡單編輯幾個主要欄位
-      const newName = prompt('商品名稱', o.name || '');
-      if (newName === null) return; // 取消編輯
-
-      const newQtyStr = prompt('數量', o.qty != null ? String(o.qty) : '1');
-      if (newQtyStr === null) return;
-      const newQty = Number(newQtyStr || 0) || 1;
-
-      const newCostStr = prompt(
-        `成本（主幣別：${o.currency || '-'}）`,
-        o.cost != null ? String(o.cost) : ''
-      );
-      if (newCostStr === null) return;
-      const newCost = newCostStr === '' ? null : Number(newCostStr || 0);
-
-      const newSellStr = prompt(
-        '售價（NT$）',
-        o.sellPrice != null ? String(o.sellPrice) : ''
-      );
-      if (newSellStr === null) return;
-      const newSell = newSellStr === '' ? null : Number(newSellStr || 0);
-
-      // 寫回陣列
-      o.name = newName.trim() || o.name;
-      o.qty = newQty;
-      o.cost = newCost;
-      o.sellPrice = newSell;
-
-      // 儲存
-      saveOrdersToStorage(orders);
-      renderList();
-      alert('已更新此筆資料');
-    }
-
-    function deleteOrder(id) {
-      const idx = findOrderIndexById(id);
-      if (idx === -1) {
-        alert('找不到這筆資料');
-        return;
-      }
-
-      const ok = confirm('確定要刪除這筆資料嗎？此動作無法復原。');
-      if (!ok) return;
-
-      orders.splice(idx, 1);
-      saveOrdersToStorage(orders);
-      renderList();
     }
 
     // 初始化
