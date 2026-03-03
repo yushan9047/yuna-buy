@@ -87,52 +87,86 @@
   </main>
 
   <script>
-    // 設定買手（Nana / Cupid）
-    function setBuyer(name, btnEl) {
-      const buyerInput = document.getElementById('pBuyer');
-      buyerInput.value = name;
+  const STORAGE_KEY = 'yunaOrders';
 
-      const group = document.getElementById('buyBuyerGroup');
-      const buttons = group.querySelectorAll('.btn-opt');
-      buttons.forEach(btn => btn.classList.remove('active'));
+  function addOrderToStorage(order) {
+    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    list.push(order);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
 
-      btnEl.classList.add('active');
+  function setBuyer(name, btnEl) {
+    const buyerInput = document.getElementById('pBuyer');
+    buyerInput.value = name;
+
+    const group = document.getElementById('buyBuyerGroup');
+    const buttons = group.querySelectorAll('.btn-opt');
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    btnEl.classList.add('active');
+  }
+
+  function saveData() {
+    const data = {
+      name: document.getElementById('pName').value.trim(),
+      priceKRW: Number(document.getElementById('pPriceKRW').value || 0),
+      priceUSD: Number(document.getElementById('pPriceUSD').value || 0),
+      sellPrice: Number(document.getElementById('pPriceSell').value || 0),
+      qty: Number(document.getElementById('pQty').value || 1),
+      loc: document.getElementById('pLoc').value.trim(),
+      customer: document.getElementById('pCustomer').value.trim(),
+      buyer: document.getElementById('pBuyer').value
+    };
+
+    if (!data.name) {
+      alert("請輸入品名");
+      return;
+    }
+    if (!data.priceKRW && !data.priceUSD) {
+      alert("請至少輸入一個購入價格（韓幣或美金）");
+      return;
+    }
+    if (!data.buyer) {
+      alert("請選擇負責買手");
+      return;
     }
 
-    // 儲存資料（目前先 console.log）
-    function saveData() {
-      const data = {
-        country: "KR",
-        name: document.getElementById('pName').value.trim(),
-        priceKRW: Number(document.getElementById('pPriceKRW').value || 0),
-        priceUSD: Number(document.getElementById('pPriceUSD').value || 0),
-        sellPrice: Number(document.getElementById('pPriceSell').value || 0),
-        qty: Number(document.getElementById('pQty').value || 1),
-        loc: document.getElementById('pLoc').value.trim(),
-        customer: document.getElementById('pCustomer').value.trim(),
-        buyer: document.getElementById('pBuyer').value
-      };
-
-      // 基本檢查
-      if (!data.name) {
-        alert("請輸入品名");
-        return;
-      }
-
-      if (!data.priceKRW && !data.priceUSD) {
-        alert("請至少輸入一個購入價格（韓幣或美金）");
-        return;
-      }
-
-      if (!data.buyer) {
-        alert("請選擇負責買手");
-        return;
-      }
-
-      console.log("韓國現場採購資料：", data);
-      alert("已暫存（目前為 console.log，可之後接後端或 localStorage）");
+    // 主幣別 / 第二幣別
+    let currency = null, cost = null, currency2 = null, cost2 = null;
+    if (data.priceKRW) {
+      currency = 'KRW';
+      cost = data.priceKRW;
     }
-  </script>
+    if (data.priceUSD) {
+      if (!currency) {
+        currency = 'USD';
+        cost = data.priceUSD;
+      } else {
+        currency2 = 'USD';
+        cost2 = data.priceUSD;
+      }
+    }
+
+    const order = {
+      id: 'O-' + Date.now().toString(36),
+      type: 'onsite',
+      country: 'KR',
+      name: data.name,
+      qty: data.qty,
+      buyer: data.buyer,
+      customer: data.customer,
+      loc: data.loc,
+      currency,
+      cost,
+      currency2,
+      cost2,
+      sellPrice: data.sellPrice || null
+    };
+
+    addOrderToStorage(order);
+    alert("已儲存到採購明細（韓國現場採購）");
+  }
+</script>
 
 </body>
 </html>
