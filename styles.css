@@ -145,28 +145,47 @@ body {
   filter: brightness(1.03);
 }
 
-/* 首頁不同選單卡片配色 */
+/* =========================
+   首頁不同選單卡片配色
+   ========================= */
+
+/* 現場採購 - 藍色系 */
+
+/* 🇯🇵 日本 - 深藍 */
 .card--onsite-jp {
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
 }
 .card--onsite-jp::after {
-  background: var(--primary);
+  background: #1d4ed8; /* 深藍 */
 }
 
+/* 🇰🇷 韓國 - 淡藍 */
 .card--onsite-kr {
-  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
 }
 .card--onsite-kr::after {
-  background: var(--red);
+  background: #60a5fa; /* 淺藍 */
 }
 
-.card--preorder {
-  background: linear-gradient(135deg, #ecfdf3, #dcfce7);
+/* 預購 - 綠色系 */
+
+/* 🇯🇵 日本 - 深綠 */
+.card--preorder-jp {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
 }
-.card--preorder::after {
-  background: var(--green);
+.card--preorder-jp::after {
+  background: #15803d; /* 深綠 */
 }
 
+/* 🇰🇷 韓國 - 淡綠 */
+.card--preorder-kr {
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+}
+.card--preorder-kr::after {
+  background: #4ade80; /* 淺綠 */
+}
+
+/* 其他功能卡片維持原色 */
 .card--purchase-list {
   background: linear-gradient(135deg, #fffbeb, #fef3c7);
 }
