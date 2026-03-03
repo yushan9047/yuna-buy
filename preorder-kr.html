@@ -86,79 +86,99 @@
     </div>
   </main>
 
-  <script>
-    function setCurrency(type, btnEl) {
-      const currencyInput = document.getElementById('pCurrency');
-      currencyInput.value = type;
+ <script>
+  const STORAGE_KEY = 'yunaOrders';
 
-      const group = btnEl.parentElement;
-      const buttons = group.querySelectorAll('.btn-opt');
-      buttons.forEach(btn => btn.classList.remove('active'));
-      btnEl.classList.add('active');
+  function addOrderToStorage(order) {
+    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    list.push(order);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
 
-      const krw = document.getElementById('priceKRWGroup');
-      const usd = document.getElementById('priceUSDGroup');
+  function setCurrency(type, btnEl) {
+    const currencyInput = document.getElementById('pCurrency');
+    currencyInput.value = type;
 
-      if (type === 'KRW') {
-        krw.style.display = 'block';
-        usd.style.display = 'none';
-        document.getElementById('pPriceUSD').value = '';
-      } else {
-        krw.style.display = 'none';
-        usd.style.display = 'block';
-        document.getElementById('pPriceKRW').value = '';
-      }
+    const group = btnEl.parentElement;
+    const buttons = group.querySelectorAll('.btn-opt');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    btnEl.classList.add('active');
+
+    const krw = document.getElementById('priceKRWGroup');
+    const usd = document.getElementById('priceUSDGroup');
+
+    if (type === 'KRW') {
+      krw.style.display = 'block';
+      usd.style.display = 'none';
+      document.getElementById('pPriceUSD').value = '';
+    } else {
+      krw.style.display = 'none';
+      usd.style.display = 'block';
+      document.getElementById('pPriceKRW').value = '';
+    }
+  }
+
+  function setBuyer(name, btnEl) {
+    const buyerInput = document.getElementById('pBuyer');
+    buyerInput.value = name;
+
+    const group = document.getElementById('buyerGroup');
+    const buttons = group.querySelectorAll('.btn-opt');
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    btnEl.classList.add('active');
+  }
+
+  function saveData() {
+    const currency = document.getElementById('pCurrency').value;
+    const data = {
+      name: document.getElementById('pName').value.trim(),
+      currency,
+      priceKRW: Number(document.getElementById('pPriceKRW').value || 0),
+      priceUSD: Number(document.getElementById('pPriceUSD').value || 0),
+      sellPrice: Number(document.getElementById('pPriceSell').value || 0),
+      qty: Number(document.getElementById('pQty').value || 1),
+      customer: document.getElementById('pCustomer').value.trim(),
+      buyer: document.getElementById('pBuyer').value
+    };
+
+    if (!data.name) {
+      alert("請輸入商品名稱");
+      return;
+    }
+    if (currency === "KRW" && !data.priceKRW) {
+      alert("請輸入韓幣購入價格");
+      return;
+    }
+    if (currency === "USD" && !data.priceUSD) {
+      alert("請輸入美金購入價格");
+      return;
+    }
+    if (!data.buyer) {
+      alert("請選擇負責人");
+      return;
     }
 
-    function setBuyer(name, btnEl) {
-      const buyerInput = document.getElementById('pBuyer');
-      buyerInput.value = name;
+    const cost = currency === 'KRW' ? data.priceKRW : data.priceUSD;
 
-      const group = document.getElementById('buyerGroup');
-      const buttons = group.querySelectorAll('.btn-opt');
-      buttons.forEach(btn => btn.classList.remove('active'));
+    const order = {
+      id: 'O-' + Date.now().toString(36),
+      type: 'preorder',
+      country: 'KR',
+      name: data.name,
+      qty: data.qty,
+      buyer: data.buyer,
+      customer: data.customer,
+      loc: null,
+      currency,
+      cost,
+      sellPrice: data.sellPrice || null
+    };
 
-      btnEl.classList.add('active');
-    }
-
-    function saveData() {
-      const data = {
-        country: "KR",
-        type: "preorder",
-        name: document.getElementById('pName').value.trim(),
-        currency: document.getElementById('pCurrency').value,
-        priceKRW: Number(document.getElementById('pPriceKRW').value || 0),
-        priceUSD: Number(document.getElementById('pPriceUSD').value || 0),
-        sellPrice: Number(document.getElementById('pPriceSell').value || 0),
-        qty: Number(document.getElementById('pQty').value || 1),
-        customer: document.getElementById('pCustomer').value.trim(),
-        buyer: document.getElementById('pBuyer').value
-      };
-
-      if (!data.name) {
-        alert("請輸入商品名稱");
-        return;
-      }
-
-      if (data.currency === "KRW" && !data.priceKRW) {
-        alert("請輸入韓幣購入價格");
-        return;
-      }
-
-      if (data.currency === "USD" && !data.priceUSD) {
-        alert("請輸入美金購入價格");
-        return;
-      }
-
-      if (!data.buyer) {
-        alert("請選擇負責人");
-        return;
-      }
-
-      console.log("韓國預購資料：", data);
-      alert("已暫存（目前為 console.log，可接後端或 localStorage）");
-    }
-  </script>
+    addOrderToStorage(order);
+    alert("已儲存到採購明細（韓國預購）");
+  }
+</script>
 
 </body>
 </html>
