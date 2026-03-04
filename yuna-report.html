@@ -1,20 +1,731 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>對帳統計</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Yuna 明細</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    .section-title { font-weight: 800; }
+
+    .group-card{
+      border: 1px solid var(--soft-border);
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .group-header{
+      padding: 14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--soft-border);
+      cursor: pointer;
+      user-select: none;
+    }
+    .group-header-left{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .group-header .name{
+      font-weight: 900;
+      font-size: 1.05rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .group-header .meta{
+      color: var(--text-sub);
+      font-size: 0.85rem;
+    }
+    .caret{
+      border: 1px solid var(--soft-border);
+      background: #fff;
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+    }
+
+    .group-body{ padding: 12px 16px 16px; display:block; }
+
+    .controls-row{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      align-items: flex-end;
+    }
+
+    .ctrl{
+      display:flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 200px;
+    }
+    .ctrl label{
+      font-size: 0.78rem;
+      color: var(--text-sub);
+    }
+    .ctrl input{
+      width: 100%;
+      font-size: 0.88rem;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--soft-border);
+      background: #fff;
+    }
+    .ctrl input:focus{
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px rgba(59,130,246,0.15);
+    }
+
+    .items{
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .item{
+      border: 1px solid var(--soft-border);
+      border-radius: 16px;
+      padding: 12px 12px;
+      background: #fff;
+    }
+
+    .item-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+    }
+    .item-left{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .thumb{
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid var(--soft-border);
+      object-fit: cover;
+      flex: 0 0 auto;
+      background: #fff;
+    }
+    .item-name{
+      font-weight: 900;
+      font-size: 1rem;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 560px;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      background: #f3f4f6;
+      color: #4b5563;
+      border: 1px solid var(--soft-border);
+      white-space: nowrap;
+    }
+    .badge--jp{ background:#fff7ed; color:#9a3412; border-color:#fed7aa; }
+    .badge--kr{ background:#eef2ff; color:#3730a3; border-color:#c7d2fe; }
+    .badge--tax{ background:#f0fdf4; color:#166534; border-color:#bbf7d0; }
+    .badge--notax{ background:#f3f4f6; color:#6b7280; border-color: var(--soft-border); }
+
+    .item-grid{
+      margin-top: 10px;
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+    }
+    @media (min-width: 880px){
+      .item-grid{ grid-template-columns: repeat(5, minmax(0,1fr)); }
+    }
+
+    .field{
+      display:flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field .label{
+      font-size: 0.75rem;
+      color: var(--text-sub);
+    }
+    .field .value, .field input{
+      font-size: 0.9rem;
+    }
+    .field input{
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--soft-border);
+      background: #fff;
+    }
+    .field input:focus{
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px rgba(59,130,246,0.15);
+    }
+
+    .toggle{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      user-select:none;
+      font-size: 0.9rem;
+      color: var(--text-sub);
+      white-space: nowrap;
+    }
+    .toggle input{ width: 18px; height: 18px; cursor: pointer; }
+
+    .summary{
+      margin-top: 12px;
+      border-top: 1px dashed var(--soft-border);
+      padding-top: 12px;
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px 14px;
+    }
+    @media (min-width: 880px){
+      .summary{ grid-template-columns: repeat(5, minmax(0,1fr)); }
+    }
+    .sum-box{
+      border: 1px solid var(--soft-border);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: #fff;
+    }
+    .sum-box .k{ font-size: 0.74rem; color: var(--text-sub); }
+    .sum-box .v{ font-size: 1.05rem; font-weight: 900; margin-top: 6px; }
+    .sum-box .v small{ font-weight: 700; color: var(--text-sub); }
+
+    .profit{
+      grid-column: 1 / -1;
+      border-color: #bbf7d0;
+      background: #ecfdf3;
+    }
+
+    .empty{
+      text-align:center;
+      color: var(--text-sub);
+      margin-top: 14px;
+      padding: 20px 0;
+    }
+  </style>
 </head>
 <body>
   <div class="header-bar">
-    <button class="back-btn" onclick="window.history.back()">← 返回</button>
-    <h2>對帳統計</h2>
+    <button class="back-btn" type="button" onclick="window.history.back()">← 返回</button>
+    <h2>Yuna 明細（依顧客分類）</h2>
   </div>
 
-  <button onclick="exportToExcel()" class="submit-btn">📊 匯出對帳 Excel</button>
-  <button onclick="clearAllData()" class="submit-btn">🗑️ 清空所有數據</button>
+  <main class="page-body">
+    <div class="wrap">
+      <div class="card" style="margin-bottom:14px;">
+        <div class="form-group" style="margin-bottom: 6px;">
+          <label class="section-title">📌 說明</label>
+        </div>
+        <div style="color:var(--text-sub); font-size:0.9rem; line-height:1.6;">
+          - 日本：外幣成本會依「有退稅」抓 <b>退稅價</b>，無退稅抓 <b>含稅價</b>，並標示。台幣成本用「顧客匯率」自動換算。<br>
+          - 韓國：外幣成本標示韓幣/美金；台幣成本每項手動填。<br>
+          - 代購費：你輸入「每件代購費」，系統用「每件 × 勾選件數」計算總代購費。<br>
+          - 淨賺 = 售價總和 + 代購費總和 − 台幣成本總和
+        </div>
+      </div>
 
-  <div id="customerList"></div> <!-- 顯示顧客統計資料 -->
+      <div id="groups"></div>
+      <div id="empty" class="empty" style="display:none;">目前沒有可計算的資料（yunaOrders 內找不到預購/採購記錄）。</div>
+    </div>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "yunaOrders";
+    const SETTINGS_KEY = "yunaDetailSettings";
+
+    function loadOrders() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+      catch(e){ console.error(e); return []; }
+    }
+
+    function saveOrders(list) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    }
+
+    // settings structure:
+    // {
+    //   customers: {
+    //     "客名": { jpyRate: 0.22, feePerItem: 50, collapsed: false }
+    //   },
+    //   items: {
+    //     "orderId": { chargeFee: true, krTwdCost: 1234 }
+    //   }
+    // }
+    function loadSettings(){
+      try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"); }
+      catch(e){ return {}; }
+    }
+    function saveSettings(s){
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+    }
+
+    function ensureSettingsShape(s){
+      if (!s || typeof s !== "object") s = {};
+      if (!s.customers || typeof s.customers !== "object") s.customers = {};
+      if (!s.items || typeof s.items !== "object") s.items = {};
+      return s;
+    }
+
+    function esc(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function toNum(x){
+      const n = Number(x);
+      return Number.isFinite(n) ? n : 0;
+    }
+    function fmt(n, digits=0){
+      const num = Number(n);
+      if (!Number.isFinite(num)) return "0";
+      return num.toLocaleString("zh-TW", { maximumFractionDigits: digits, minimumFractionDigits: digits });
+    }
+
+    // ----- Foreign cost logic -----
+    function getForeignCostInfo(order){
+      // returns { amount, currency, label, countryTag, extraNote }
+      const country = order.country;
+
+      if (country === "JP") {
+        const extra = order.extra || {};
+        const isTaxFree = String(extra.isTaxFree) === "true" || extra.isTaxFree === true;
+
+        if (isTaxFree) {
+          const v = toNum(extra.taxFreePrice);
+          return {
+            amount: v,
+            currency: "JPY",
+            label: "退稅價",
+            countryTag: "JP",
+            extraNote: "未稅(退稅後)"
+          };
+        }
+
+        // no tax-free: use cost (tax-included price)
+        const v = toNum(order.cost);
+        return {
+          amount: v,
+          currency: "JPY",
+          label: "含稅價",
+          countryTag: "JP",
+          extraNote: "含稅"
+        };
+      }
+
+      if (country === "KR") {
+        const c = String(order.currency || "KRW");
+        const v = toNum(order.cost);
+        const label = (c === "USD") ? "美金" : "韓幣";
+        return {
+          amount: v,
+          currency: c,
+          label,
+          countryTag: "KR",
+          extraNote: ""
+        };
+      }
+
+      // fallback
+      return {
+        amount: toNum(order.cost),
+        currency: String(order.currency || "-"),
+        label: "",
+        countryTag: country || "-",
+        extraNote: ""
+      };
+    }
+
+    // ----- Grouping -----
+    function groupByCustomer(orders){
+      const grouped = {};
+      for (const o of orders){
+        const key = (o.customer && String(o.customer).trim()) ? String(o.customer).trim() : "未填顧客";
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(o);
+      }
+      return grouped;
+    }
+
+    // ----- Settings updates -----
+    function setCustomerSetting(customer, key, value){
+      const s = ensureSettingsShape(loadSettings());
+      if (!s.customers[customer]) s.customers[customer] = {};
+      s.customers[customer][key] = value;
+      saveSettings(s);
+    }
+
+    function setItemSetting(orderId, key, value){
+      const s = ensureSettingsShape(loadSettings());
+      if (!s.items[orderId]) s.items[orderId] = {};
+      s.items[orderId][key] = value;
+      saveSettings(s);
+    }
+
+    function getCustomerSetting(customer, key, defaultVal){
+      const s = ensureSettingsShape(loadSettings());
+      return (s.customers[customer] && s.customers[customer][key] != null) ? s.customers[customer][key] : defaultVal;
+    }
+
+    function getItemSetting(orderId, key, defaultVal){
+      const s = ensureSettingsShape(loadSettings());
+      return (s.items[orderId] && s.items[orderId][key] != null) ? s.items[orderId][key] : defaultVal;
+    }
+
+    // ----- Render helpers -----
+    function toggleGroup(customer){
+      const body = document.getElementById("body-" + customer);
+      if (!body) return;
+      const isHidden = body.style.display === "none";
+      body.style.display = isHidden ? "block" : "none";
+      setCustomerSetting(customer, "collapsed", !isHidden);
+      // update button text
+      const btn = document.getElementById("caret-" + customer);
+      if (btn) btn.textContent = isHidden ? "收合" : "展開";
+    }
+
+    function calcCustomerTotals(customer, items){
+      // totals:
+      // foreignTotals: { JPY: n, KRW: n, USD: n }
+      // twdTotal
+      // sellTotal
+      // feeSelectedCount
+      // feePerItem
+      // feeTotal
+      const foreignTotals = {};
+      let twdTotal = 0;
+      let sellTotal = 0;
+
+      const jpyRate = toNum(getCustomerSetting(customer, "jpyRate", 0)); // NTD per 1 JPY
+      const feePerItem = toNum(getCustomerSetting(customer, "feePerItem", 0));
+
+      let feeSelectedCount = 0;
+
+      for (const o of items){
+        const qty = Math.max(1, toNum(o.qty || 1));
+        const sell = toNum(o.sellPrice);
+        sellTotal += (sell * qty);
+
+        const f = getForeignCostInfo(o);
+        const fLine = f.amount * qty;
+        foreignTotals[f.currency] = (foreignTotals[f.currency] || 0) + fLine;
+
+        // twd per line
+        if (o.country === "JP") {
+          const twd = (jpyRate > 0) ? (f.amount * jpyRate * qty) : 0;
+          twdTotal += twd;
+        } else if (o.country === "KR") {
+          // per-item manual
+          const manual = toNum(getItemSetting(o.id, "krTwdCost", 0));
+          twdTotal += (manual * qty);
+        } else {
+          // fallback: if someone enters cost in NTD? not specified
+        }
+
+        const chargeFee = !!getItemSetting(o.id, "chargeFee", false);
+        if (chargeFee) feeSelectedCount += 1;
+      }
+
+      const feeTotal = feePerItem * feeSelectedCount;
+      const profit = sellTotal + feeTotal - twdTotal;
+
+      return { foreignTotals, twdTotal, sellTotal, feeSelectedCount, feePerItem, feeTotal, profit, jpyRate };
+    }
+
+    function foreignTotalsText(map){
+      const parts = [];
+      const keys = Object.keys(map);
+      // stable order
+      const order = ["JPY","KRW","USD"];
+      const sorted = order.filter(k => keys.includes(k)).concat(keys.filter(k => !order.includes(k)));
+      for (const cur of sorted){
+        parts.push(`${fmt(map[cur], 0)} ${cur}`);
+      }
+      return parts.length ? parts.join(" / ") : "0";
+    }
+
+    function render(){
+      const orders = loadOrders();
+
+      // 你這頁的需求是「明細成本計算」，主要拿預購資料最合理
+      // 如果你也想包含 onsite，把下面 filter 改成 true 就行
+      const usable = orders.filter(o => (o && o.type === "preorder"));
+
+      const root = document.getElementById("groups");
+      const empty = document.getElementById("empty");
+      root.innerHTML = "";
+
+      if (usable.length === 0){
+        empty.style.display = "block";
+        return;
+      }
+      empty.style.display = "none";
+
+      const grouped = groupByCustomer(usable);
+      const customers = Object.keys(grouped).sort((a,b)=>a.localeCompare(b, "zh-Hant"));
+
+      for (const customer of customers){
+        const items = grouped[customer].slice().sort((a,b)=> (a.id < b.id ? 1 : -1));
+        const collapsed = !!getCustomerSetting(customer, "collapsed", false);
+
+        // Determine if customer has JP items (to show jpyRate)
+        const hasJP = items.some(x => x.country === "JP");
+        const totals = calcCustomerTotals(customer, items);
+
+        const group = document.createElement("div");
+        group.className = "group-card";
+
+        // header summary
+        const header = document.createElement("div");
+        header.className = "group-header";
+        header.onclick = () => toggleGroup(customer);
+
+        header.innerHTML = `
+          <div class="group-header-left">
+            <div style="font-size:22px; line-height:1;">👤</div>
+            <div style="min-width:0;">
+              <div class="name">${esc(customer)}</div>
+              <div class="meta">
+                外幣：${esc(foreignTotalsText(totals.foreignTotals))}｜台幣成本：NT$ ${esc(fmt(totals.twdTotal,0))}｜售價：NT$ ${esc(fmt(totals.sellTotal,0))}
+              </div>
+            </div>
+          </div>
+          <button type="button" class="caret" id="caret-${customer}">${collapsed ? "展開" : "收合"}</button>
+        `;
+
+        const body = document.createElement("div");
+        body.className = "group-body";
+        body.id = "body-" + customer;
+        body.style.display = collapsed ? "none" : "block";
+
+        // controls: JPY rate + fee per item
+        const controls = document.createElement("div");
+        controls.className = "controls-row";
+
+        const rateCtrl = hasJP ? `
+          <div class="ctrl">
+            <label>💱 JPY → NT 匯率（1 JPY = ? NT）</label>
+            <input
+              type="number"
+              step="0.0001"
+              value="${esc(String(totals.jpyRate || ""))}"
+              placeholder="例如 0.22"
+              oninput="(function(v){ setCustomerSetting('${customer}','jpyRate', v); render(); })(this.value)"
+              onclick="event.stopPropagation();"
+            />
+          </div>
+        ` : "";
+
+        const feeCtrl = `
+          <div class="ctrl">
+            <label>🧾 每件代購費（NT$）（只在此顧客結算用）</label>
+            <input
+              type="number"
+              step="1"
+              value="${esc(String(getCustomerSetting(customer,'feePerItem','') || ''))}"
+              placeholder="例如 50"
+              oninput="(function(v){ setCustomerSetting('${customer}','feePerItem', v); render(); })(this.value)"
+              onclick="event.stopPropagation();"
+            />
+          </div>
+        `;
+
+        controls.innerHTML = rateCtrl + feeCtrl;
+
+        // items list
+        const list = document.createElement("div");
+        list.className = "items";
+
+        for (const o of items){
+          const qty = Math.max(1, toNum(o.qty || 1));
+          const sell = toNum(o.sellPrice);
+
+          const f = getForeignCostInfo(o);
+          const isJP = o.country === "JP";
+          const isKR = o.country === "KR";
+
+          const chargeFee = !!getItemSetting(o.id, "chargeFee", false);
+
+          // TWD cost:
+          // - JP: computed using customer rate
+          // - KR: manual per item (per 1 quantity)
+          let twdLine = 0;
+          let twdCellHtml = "";
+          if (isJP){
+            const rate = toNum(getCustomerSetting(customer, "jpyRate", 0));
+            twdLine = (rate > 0) ? (f.amount * rate * qty) : 0;
+            twdCellHtml = `
+              <div class="field">
+                <div class="label">台幣成本（自動換算）</div>
+                <div class="value">NT$ ${esc(fmt(twdLine,0))} <span style="color:var(--text-sub); font-size:0.78rem;">（${esc(fmt(f.amount,0))}×${esc(fmt(rate,4))}×${esc(qty)}）</span></div>
+              </div>
+            `;
+          } else if (isKR){
+            const manual = getItemSetting(o.id, "krTwdCost", "");
+            const manualNum = toNum(manual);
+            twdLine = manualNum * qty;
+            twdCellHtml = `
+              <div class="field">
+                <div class="label">台幣成本（每件）你填</div>
+                <input
+                  type="number"
+                  step="1"
+                  value="${esc(String(manual))}"
+                  placeholder="每件 NT$"
+                  oninput="(function(v){ setItemSetting('${o.id}','krTwdCost', v); render(); })(this.value)"
+                />
+                <div style="margin-top:6px; color:var(--text-sub); font-size:0.78rem;">
+                  小計：NT$ ${esc(fmt(twdLine,0))}（每件×數量）
+                </div>
+              </div>
+            `;
+          } else {
+            twdCellHtml = `
+              <div class="field">
+                <div class="label">台幣成本</div>
+                <div class="value" style="color:var(--text-sub);">（此國家/來源未定義）</div>
+              </div>
+            `;
+          }
+
+          const taxBadge = isJP
+            ? `<span class="badge ${String((o.extra||{}).isTaxFree) === "true" || (o.extra||{}).isTaxFree === true ? "badge--tax" : "badge--notax"}">${esc(f.label)}</span>`
+            : "";
+
+          const countryBadge = isJP
+            ? `<span class="badge badge--jp">JP</span>`
+            : (isKR ? `<span class="badge badge--kr">KR</span>` : `<span class="badge">${esc(o.country||"-")}</span>`);
+
+          const thumb = o.image ? `<img class="thumb" src="${o.image}" alt="thumb">` : "";
+
+          const item = document.createElement("div");
+          item.className = "item";
+
+          item.innerHTML = `
+            <div class="item-top">
+              <div class="item-left">
+                ${thumb}
+                <div style="min-width:0;">
+                  <div class="item-name">${esc(o.name || "（未填品名）")}</div>
+                  <div style="margin-top:6px; display:flex; gap:8px; flex-wrap:wrap;">
+                    ${countryBadge}
+                    ${taxBadge}
+                    ${isKR ? `<span class="badge">${esc(f.label)}(${esc(f.currency)})</span>` : ""}
+                  </div>
+                </div>
+              </div>
+
+              <label class="toggle">
+                <input type="checkbox" ${chargeFee ? "checked" : ""} onchange="(function(ch){ setItemSetting('${o.id}','chargeFee', ch); render(); })(this.checked)">
+                收代購費
+              </label>
+            </div>
+
+            <div class="item-grid">
+              <div class="field">
+                <div class="label">數量</div>
+                <div class="value">${esc(fmt(qty,0))}</div>
+              </div>
+
+              <div class="field">
+                <div class="label">售價（每件）</div>
+                <div class="value">NT$ ${esc(fmt(sell,0))}</div>
+              </div>
+
+              <div class="field">
+                <div class="label">售價小計</div>
+                <div class="value">NT$ ${esc(fmt(sell*qty,0))}</div>
+              </div>
+
+              <div class="field">
+                <div class="label">外幣成本（每件）</div>
+                <div class="value">${esc(fmt(f.amount,0))} ${esc(f.currency)}
+                  ${f.extraNote ? `<small style="color:var(--text-sub);">（${esc(f.extraNote)}）</small>` : ""}
+                </div>
+              </div>
+
+              <div class="field">
+                <div class="label">外幣成本小計</div>
+                <div class="value">${esc(fmt(f.amount*qty,0))} ${esc(f.currency)}</div>
+              </div>
+
+              ${twdCellHtml}
+            </div>
+          `;
+
+          list.appendChild(item);
+        }
+
+        // summary boxes
+        const totals2 = calcCustomerTotals(customer, items);
+        const summary = document.createElement("div");
+        summary.className = "summary";
+
+        summary.innerHTML = `
+          <div class="sum-box">
+            <div class="k">外幣成本總和</div>
+            <div class="v">${esc(foreignTotalsText(totals2.foreignTotals))}</div>
+          </div>
+
+          <div class="sum-box">
+            <div class="k">台幣成本總和</div>
+            <div class="v">NT$ ${esc(fmt(totals2.twdTotal,0))}</div>
+          </div>
+
+          <div class="sum-box">
+            <div class="k">售價總和</div>
+            <div class="v">NT$ ${esc(fmt(totals2.sellTotal,0))}</div>
+          </div>
+
+          <div class="sum-box">
+            <div class="k">代購費總和</div>
+            <div class="v">NT$ ${esc(fmt(totals2.feeTotal,0))} <small>（${esc(fmt(totals2.feePerItem,0))} × 勾選${esc(fmt(totals2.feeSelectedCount,0))}件）</small></div>
+          </div>
+
+          <div class="sum-box profit">
+            <div class="k">淨賺（售價總和 + 代購費 − 台幣成本）</div>
+            <div class="v">NT$ ${esc(fmt(totals2.profit,0))}</div>
+          </div>
+        `;
+
+        body.appendChild(controls);
+        body.appendChild(list);
+        body.appendChild(summary);
+
+        group.appendChild(header);
+        group.appendChild(body);
+        root.appendChild(group);
+      }
+    }
+
+    render();
+  </script>
 </body>
 </html>
