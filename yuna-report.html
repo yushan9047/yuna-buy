@@ -256,24 +256,16 @@
   <script>
     const STORAGE_KEY = "yunaOrders";
     const SETTINGS_KEY = "yunaDetailSettings";
-
+  
     function loadOrders() {
       try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
       catch(e){ console.error(e); return []; }
     }
-
-    function saveOrders(list) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    }
-
+  
     // settings structure:
     // {
-    //   customers: {
-    //     "客名": { jpyRate: 0.22, feePerItem: 50, collapsed: false }
-    //   },
-    //   items: {
-    //     "orderId": { chargeFee: true, krTwdCost: 1234 }
-    //   }
+    //   customers: { "客名": { jpyRate: 0.22, feePerItem: 50, collapsed: false } },
+    //   items: { "orderId": { chargeFee: true, krTwdCost: 1234 } }
     // }
     function loadSettings(){
       try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"); }
@@ -282,14 +274,13 @@
     function saveSettings(s){
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
     }
-
     function ensureSettingsShape(s){
       if (!s || typeof s !== "object") s = {};
       if (!s.customers || typeof s.customers !== "object") s.customers = {};
       if (!s.items || typeof s.items !== "object") s.items = {};
       return s;
     }
-
+  
     function esc(s){
       return String(s ?? "")
         .replaceAll("&","&amp;")
@@ -298,7 +289,7 @@
         .replaceAll('"',"&quot;")
         .replaceAll("'","&#039;");
     }
-
+  
     function toNum(x){
       const n = Number(x);
       return Number.isFinite(n) ? n : 0;
@@ -308,61 +299,34 @@
       if (!Number.isFinite(num)) return "0";
       return num.toLocaleString("zh-TW", { maximumFractionDigits: digits, minimumFractionDigits: digits });
     }
-
+  
     // ----- Foreign cost logic -----
     function getForeignCostInfo(order){
-      // returns { amount, currency, label, countryTag, extraNote }
       const country = order.country;
-
+  
       if (country === "JP") {
         const extra = order.extra || {};
         const isTaxFree = String(extra.isTaxFree) === "true" || extra.isTaxFree === true;
-
+  
         if (isTaxFree) {
           const v = toNum(extra.taxFreePrice);
-          return {
-            amount: v,
-            currency: "JPY",
-            label: "退稅價",
-            countryTag: "JP",
-            extraNote: "未稅(退稅後)"
-          };
+          return { amount: v, currency: "JPY", label: "退稅價", extraNote: "未稅(退稅後)" };
         }
-
-        // no tax-free: use cost (tax-included price)
+  
         const v = toNum(order.cost);
-        return {
-          amount: v,
-          currency: "JPY",
-          label: "含稅價",
-          countryTag: "JP",
-          extraNote: "含稅"
-        };
+        return { amount: v, currency: "JPY", label: "含稅價", extraNote: "含稅" };
       }
-
+  
       if (country === "KR") {
         const c = String(order.currency || "KRW");
         const v = toNum(order.cost);
         const label = (c === "USD") ? "美金" : "韓幣";
-        return {
-          amount: v,
-          currency: c,
-          label,
-          countryTag: "KR",
-          extraNote: ""
-        };
+        return { amount: v, currency: c, label, extraNote: "" };
       }
-
-      // fallback
-      return {
-        amount: toNum(order.cost),
-        currency: String(order.currency || "-"),
-        label: "",
-        countryTag: country || "-",
-        extraNote: ""
-      };
+  
+      return { amount: toNum(order.cost), currency: String(order.currency || "-"), label: "", extraNote: "" };
     }
-
+  
     // ----- Grouping -----
     function groupByCustomer(orders){
       const grouped = {};
@@ -373,7 +337,7 @@
       }
       return grouped;
     }
-
+  
     // ----- Settings updates -----
     function setCustomerSetting(customer, key, value){
       const s = ensureSettingsShape(loadSettings());
@@ -381,24 +345,21 @@
       s.customers[customer][key] = value;
       saveSettings(s);
     }
-
     function setItemSetting(orderId, key, value){
       const s = ensureSettingsShape(loadSettings());
       if (!s.items[orderId]) s.items[orderId] = {};
       s.items[orderId][key] = value;
       saveSettings(s);
     }
-
     function getCustomerSetting(customer, key, defaultVal){
       const s = ensureSettingsShape(loadSettings());
       return (s.customers[customer] && s.customers[customer][key] != null) ? s.customers[customer][key] : defaultVal;
     }
-
     function getItemSetting(orderId, key, defaultVal){
       const s = ensureSettingsShape(loadSettings());
       return (s.items[orderId] && s.items[orderId][key] != null) ? s.items[orderId][key] : defaultVal;
     }
-
+  
     // ----- Render helpers -----
     function toggleGroup(customer){
       const body = document.getElementById("body-" + customer);
@@ -406,63 +367,63 @@
       const isHidden = body.style.display === "none";
       body.style.display = isHidden ? "block" : "none";
       setCustomerSetting(customer, "collapsed", !isHidden);
-      // update button text
+  
       const btn = document.getElementById("caret-" + customer);
       if (btn) btn.textContent = isHidden ? "收合" : "展開";
     }
-
+  
     function calcCustomerTotals(customer, items){
-      // totals:
-      // foreignTotals: { JPY: n, KRW: n, USD: n }
-      // twdTotal
-      // sellTotal
-      // feeSelectedCount
-      // feePerItem
-      // feeTotal
       const foreignTotals = {};
       let twdTotal = 0;
       let sellTotal = 0;
-
-      const jpyRate = toNum(getCustomerSetting(customer, "jpyRate", 0)); // NTD per 1 JPY
+  
+      const jpyRate = toNum(getCustomerSetting(customer, "jpyRate", 0));
       const feePerItem = toNum(getCustomerSetting(customer, "feePerItem", 0));
-
-      let feeSelectedCount = 0;
-
+  
+      // ✅ 你要的「數量統計」（依你現行代購費算法：以品項為單位）
+      const totalItemCount = items.length;           // 不管收不收代購費的品項數
+      let feeItemCount = 0;                          // 有勾收代購費的品項數
+  
       for (const o of items){
         const qty = Math.max(1, toNum(o.qty || 1));
         const sell = toNum(o.sellPrice);
         sellTotal += (sell * qty);
-
+  
         const f = getForeignCostInfo(o);
         const fLine = f.amount * qty;
         foreignTotals[f.currency] = (foreignTotals[f.currency] || 0) + fLine;
-
-        // twd per line
+  
         if (o.country === "JP") {
           const twd = (jpyRate > 0) ? (f.amount * jpyRate * qty) : 0;
           twdTotal += twd;
         } else if (o.country === "KR") {
-          // per-item manual
           const manual = toNum(getItemSetting(o.id, "krTwdCost", 0));
           twdTotal += (manual * qty);
-        } else {
-          // fallback: if someone enters cost in NTD? not specified
         }
-
+  
         const chargeFee = !!getItemSetting(o.id, "chargeFee", false);
-        if (chargeFee) feeSelectedCount += 1;
+        if (chargeFee) feeItemCount += 1; // ✅ 保留你喜歡的：按「品項」計
       }
-
-      const feeTotal = feePerItem * feeSelectedCount;
+  
+      const feeTotal = feePerItem * feeItemCount;
       const profit = sellTotal + feeTotal - twdTotal;
-
-      return { foreignTotals, twdTotal, sellTotal, feeSelectedCount, feePerItem, feeTotal, profit, jpyRate };
+  
+      return {
+        foreignTotals,
+        twdTotal,
+        sellTotal,
+        feeItemCount,
+        totalItemCount,
+        feePerItem,
+        feeTotal,
+        profit,
+        jpyRate
+      };
     }
-
+  
     function foreignTotalsText(map){
       const parts = [];
       const keys = Object.keys(map);
-      // stable order
       const order = ["JPY","KRW","USD"];
       const sorted = order.filter(k => keys.includes(k)).concat(keys.filter(k => !order.includes(k)));
       for (const cur of sorted){
@@ -470,65 +431,72 @@
       }
       return parts.length ? parts.join(" / ") : "0";
     }
-
+  
+    // ✅ 防止輸入跳掉：編輯中的顧客 & 欄位暫存（不必每次重畫）
+    let activeCustomerForInput = null;
+  
     function render(){
       const orders = loadOrders();
-
-      // 你這頁的需求是「明細成本計算」，主要拿預購資料最合理
-      // 如果你也想包含 onsite，把下面 filter 改成 true 就行
+  
+      // 仍維持你原本：只拿 preorder
       const usable = orders.filter(o => (o && o.type === "preorder"));
-
+  
       const root = document.getElementById("groups");
       const empty = document.getElementById("empty");
       root.innerHTML = "";
-
+  
       if (usable.length === 0){
         empty.style.display = "block";
         return;
       }
       empty.style.display = "none";
-
+  
       const grouped = groupByCustomer(usable);
       const customers = Object.keys(grouped).sort((a,b)=>a.localeCompare(b, "zh-Hant"));
-
+  
       for (const customer of customers){
         const items = grouped[customer].slice().sort((a,b)=> (a.id < b.id ? 1 : -1));
         const collapsed = !!getCustomerSetting(customer, "collapsed", false);
-
-        // Determine if customer has JP items (to show jpyRate)
+  
         const hasJP = items.some(x => x.country === "JP");
         const totals = calcCustomerTotals(customer, items);
-
+  
         const group = document.createElement("div");
         group.className = "group-card";
-
-        // header summary
+  
         const header = document.createElement("div");
         header.className = "group-header";
         header.onclick = () => toggleGroup(customer);
-
+  
         header.innerHTML = `
           <div class="group-header-left">
             <div style="font-size:22px; line-height:1;">👤</div>
             <div style="min-width:0;">
               <div class="name">${esc(customer)}</div>
               <div class="meta">
-                外幣：${esc(foreignTotalsText(totals.foreignTotals))}｜台幣成本：NT$ ${esc(fmt(totals.twdTotal,0))}｜售價：NT$ ${esc(fmt(totals.sellTotal,0))}
+                外幣：${esc(foreignTotalsText(totals.foreignTotals))}
+                ｜台幣成本：NT$ ${esc(fmt(totals.twdTotal,0))}
+                ｜售價：NT$ ${esc(fmt(totals.sellTotal,0))}
               </div>
             </div>
           </div>
           <button type="button" class="caret" id="caret-${customer}">${collapsed ? "展開" : "收合"}</button>
         `;
-
+  
         const body = document.createElement("div");
         body.className = "group-body";
         body.id = "body-" + customer;
         body.style.display = collapsed ? "none" : "block";
-
-        // controls: JPY rate + fee per item
+  
+        // controls
         const controls = document.createElement("div");
         controls.className = "controls-row";
-
+  
+        // ✅ 代購費 input：oninput 只存，不 render；onblur/Enter 才 render
+        const feeCurrent = (activeCustomerForInput === customer)
+          ? (getCustomerSetting(customer,'feePerItem','') ?? '')
+          : (getCustomerSetting(customer,'feePerItem','') ?? '');
+  
         const rateCtrl = hasJP ? `
           <div class="ctrl">
             <label>💱 JPY → NT 匯率（1 JPY = ? NT）</label>
@@ -537,54 +505,60 @@
               step="0.0001"
               value="${esc(String(totals.jpyRate || ""))}"
               placeholder="例如 0.22"
-              oninput="(function(v){ setCustomerSetting('${customer}','jpyRate', v); render(); })(this.value)"
-              onclick="event.stopPropagation();"
+              oninput="(function(v){ setCustomerSetting('${customer}','jpyRate', v); })(this.value)"
+              onblur="render()"
+              onkeydown="if(event.key==='Enter'){ this.blur(); }"
+              onclick="event.stopPropagation(); activeCustomerForInput='${customer}';"
             />
           </div>
         ` : "";
-
+  
         const feeCtrl = `
           <div class="ctrl">
             <label>🧾 每件代購費（NT$）（只在此顧客結算用）</label>
             <input
               type="number"
               step="1"
-              value="${esc(String(getCustomerSetting(customer,'feePerItem','') || ''))}"
+              inputmode="numeric"
+              value="${esc(String(feeCurrent || ""))}"
               placeholder="例如 50"
-              oninput="(function(v){ setCustomerSetting('${customer}','feePerItem', v); render(); })(this.value)"
-              onclick="event.stopPropagation();"
+              oninput="(function(v){ setCustomerSetting('${customer}','feePerItem', v); activeCustomerForInput='${customer}'; })(this.value)"
+              onblur="render()"
+              onkeydown="if(event.key==='Enter'){ this.blur(); }"
+              onclick="event.stopPropagation(); activeCustomerForInput='${customer}';"
             />
           </div>
         `;
-
+  
         controls.innerHTML = rateCtrl + feeCtrl;
-
-        // items list
+  
         const list = document.createElement("div");
         list.className = "items";
-
+  
         for (const o of items){
           const qty = Math.max(1, toNum(o.qty || 1));
           const sell = toNum(o.sellPrice);
-
+  
           const f = getForeignCostInfo(o);
           const isJP = o.country === "JP";
           const isKR = o.country === "KR";
-
+  
           const chargeFee = !!getItemSetting(o.id, "chargeFee", false);
-
-          // TWD cost:
-          // - JP: computed using customer rate
-          // - KR: manual per item (per 1 quantity)
+  
           let twdLine = 0;
           let twdCellHtml = "";
+  
           if (isJP){
             const rate = toNum(getCustomerSetting(customer, "jpyRate", 0));
             twdLine = (rate > 0) ? (f.amount * rate * qty) : 0;
             twdCellHtml = `
               <div class="field">
                 <div class="label">台幣成本（自動換算）</div>
-                <div class="value">NT$ ${esc(fmt(twdLine,0))} <span style="color:var(--text-sub); font-size:0.78rem;">（${esc(fmt(f.amount,0))}×${esc(fmt(rate,4))}×${esc(qty)}）</span></div>
+                <div class="value">NT$ ${esc(fmt(twdLine,0))}
+                  <span style="color:var(--text-sub); font-size:0.78rem;">
+                    （${esc(fmt(f.amount,0))}×${esc(fmt(rate,4))}×${esc(qty)}）
+                  </span>
+                </div>
               </div>
             `;
           } else if (isKR){
@@ -599,7 +573,9 @@
                   step="1"
                   value="${esc(String(manual))}"
                   placeholder="每件 NT$"
-                  oninput="(function(v){ setItemSetting('${o.id}','krTwdCost', v); render(); })(this.value)"
+                  oninput="(function(v){ setItemSetting('${o.id}','krTwdCost', v); })(this.value)"
+                  onblur="render()"
+                  onkeydown="if(event.key==='Enter'){ this.blur(); }"
                 />
                 <div style="margin-top:6px; color:var(--text-sub); font-size:0.78rem;">
                   小計：NT$ ${esc(fmt(twdLine,0))}（每件×數量）
@@ -614,20 +590,23 @@
               </div>
             `;
           }
-
+  
           const taxBadge = isJP
-            ? `<span class="badge ${String((o.extra||{}).isTaxFree) === "true" || (o.extra||{}).isTaxFree === true ? "badge--tax" : "badge--notax"}">${esc(f.label)}</span>`
+            ? `<span class="badge ${
+                (String((o.extra||{}).isTaxFree)==="true" || (o.extra||{}).isTaxFree===true)
+                  ? "badge--tax" : "badge--notax"
+              }">${esc(f.label)}</span>`
             : "";
-
+  
           const countryBadge = isJP
             ? `<span class="badge badge--jp">JP</span>`
             : (isKR ? `<span class="badge badge--kr">KR</span>` : `<span class="badge">${esc(o.country||"-")}</span>`);
-
+  
           const thumb = o.image ? `<img class="thumb" src="${o.image}" alt="thumb">` : "";
-
+  
           const item = document.createElement("div");
           item.className = "item";
-
+  
           item.innerHTML = `
             <div class="item-top">
               <div class="item-left">
@@ -641,90 +620,102 @@
                   </div>
                 </div>
               </div>
-
-              <label class="toggle">
-                <input type="checkbox" ${chargeFee ? "checked" : ""} onchange="(function(ch){ setItemSetting('${o.id}','chargeFee', ch); render(); })(this.checked)">
+  
+              <label class="toggle" onclick="event.stopPropagation();">
+                <input type="checkbox" ${chargeFee ? "checked" : ""}
+                  onchange="(function(ch){ setItemSetting('${o.id}','chargeFee', ch); render(); })(this.checked)">
                 收代購費
               </label>
             </div>
-
+  
             <div class="item-grid">
               <div class="field">
                 <div class="label">數量</div>
                 <div class="value">${esc(fmt(qty,0))}</div>
               </div>
-
+  
               <div class="field">
                 <div class="label">售價（每件）</div>
                 <div class="value">NT$ ${esc(fmt(sell,0))}</div>
               </div>
-
+  
               <div class="field">
                 <div class="label">售價小計</div>
                 <div class="value">NT$ ${esc(fmt(sell*qty,0))}</div>
               </div>
-
+  
               <div class="field">
                 <div class="label">外幣成本（每件）</div>
                 <div class="value">${esc(fmt(f.amount,0))} ${esc(f.currency)}
                   ${f.extraNote ? `<small style="color:var(--text-sub);">（${esc(f.extraNote)}）</small>` : ""}
                 </div>
               </div>
-
+  
               <div class="field">
                 <div class="label">外幣成本小計</div>
                 <div class="value">${esc(fmt(f.amount*qty,0))} ${esc(f.currency)}</div>
               </div>
-
+  
               ${twdCellHtml}
             </div>
           `;
-
+  
           list.appendChild(item);
         }
-
+  
         // summary boxes
         const totals2 = calcCustomerTotals(customer, items);
         const summary = document.createElement("div");
         summary.className = "summary";
-
+  
         summary.innerHTML = `
+          <div class="sum-box">
+            <div class="k">品項數量統計</div>
+            <div class="v">
+              ${esc(fmt(totals2.feeItemCount,0))} <small>收代購費</small>
+              ／ ${esc(fmt(totals2.totalItemCount,0))} <small>總品項</small>
+            </div>
+          </div>
+  
           <div class="sum-box">
             <div class="k">外幣成本總和</div>
             <div class="v">${esc(foreignTotalsText(totals2.foreignTotals))}</div>
           </div>
-
+  
           <div class="sum-box">
             <div class="k">台幣成本總和</div>
             <div class="v">NT$ ${esc(fmt(totals2.twdTotal,0))}</div>
           </div>
-
+  
           <div class="sum-box">
             <div class="k">售價總和</div>
             <div class="v">NT$ ${esc(fmt(totals2.sellTotal,0))}</div>
           </div>
-
+  
           <div class="sum-box">
             <div class="k">代購費總和</div>
-            <div class="v">NT$ ${esc(fmt(totals2.feeTotal,0))} <small>（${esc(fmt(totals2.feePerItem,0))} × 勾選${esc(fmt(totals2.feeSelectedCount,0))}件）</small></div>
+            <div class="v">
+              NT$ ${esc(fmt(totals2.feeTotal,0))}
+              <small>（${esc(fmt(totals2.feePerItem,0))} × 勾選${esc(fmt(totals2.feeItemCount,0))}件）</small>
+            </div>
           </div>
-
+  
           <div class="sum-box profit">
             <div class="k">淨賺（售價總和 + 代購費 − 台幣成本）</div>
             <div class="v">NT$ ${esc(fmt(totals2.profit,0))}</div>
           </div>
         `;
-
+  
         body.appendChild(controls);
         body.appendChild(list);
         body.appendChild(summary);
-
+  
         group.appendChild(header);
         group.appendChild(body);
         root.appendChild(group);
       }
     }
-
+  
     render();
   </script>
 </body>
