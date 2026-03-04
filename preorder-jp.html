@@ -247,360 +247,462 @@
   </main>
 
   <script>
-  const STORAGE_KEY = 'yunaOrders';
-
-  function loadOrders() {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    } catch (e) {
-      console.error('讀取 yunaOrders 失敗', e);
-      return [];
-    }
-  }
-
-  function saveOrdersToStorage(list) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  }
-
-  function addOrderToStorage(order) {
-    const list = loadOrders();
-    list.push(order);
-    saveOrdersToStorage(list);
-  }
-
-  /* =========================
-     退稅切換
-     ========================= */
-  function togglePreTax(hasTaxFree) {
-    const yesBtn = document.getElementById('taxBtnYes');
-    const noBtn = document.getElementById('taxBtnNo');
-    const taxRateGroup = document.getElementById('taxRateGroup');
-    const taxFreeGroup = document.getElementById('preTaxFreeGroup');
-    const isTaxFreeInput = document.getElementById('preIsTaxFree');
-
-    if (hasTaxFree) {
-      isTaxFreeInput.value = 'true';
-      yesBtn.classList.add('active');
-      noBtn.classList.remove('active');
-      taxRateGroup.style.display = 'block';
-      taxFreeGroup.style.display = 'block';
-    } else {
-      isTaxFreeInput.value = 'false';
-      yesBtn.classList.remove('active');
-      noBtn.classList.add('active');
-      taxRateGroup.style.display = 'none';
-      taxFreeGroup.style.display = 'none';
-      document.getElementById('preTaxRate').value = 10;
-      document.getElementById('preTaxFreePrice').value = '';
-    }
-  }
-
-  /* =========================
-     買手選擇
-     ========================= */
-  function setPreBuyer(name, btnEl) {
-    const buyerInput = document.getElementById('preBuyer');
-    buyerInput.value = name;
-
-    const group = document.getElementById('preBuyerGroup');
-    const buttons = group.querySelectorAll('.btn-opt');
-    buttons.forEach(btn => btn.classList.remove('active'));
-    btnEl.classList.add('active');
-
-    const rayCardBox = document.getElementById('preRayCardOptions');
-    if (name === 'Ray') {
-      rayCardBox.style.display = 'block';
-    } else {
-      rayCardBox.style.display = 'none';
-      document.getElementById('preRayCard').value = '';
-      const rayButtons = rayCardBox.querySelectorAll('.btn-opt');
-      rayButtons.forEach(btn => btn.classList.remove('active'));
-    }
-  }
-
-  function setPreRayCard(cardName, btnEl) {
-    const cardInput = document.getElementById('preRayCard');
-    cardInput.value = cardName;
-
-    const rayCardBox = document.getElementById('preRayCardOptions');
-    const buttons = rayCardBox.querySelectorAll('.btn-opt');
-    buttons.forEach(btn => btn.classList.remove('active'));
-    btnEl.classList.add('active');
-  }
-
-  /* =========================
-     儲存預購
-     ========================= */
-  function savePreOrder() {
-    const data = {
-      name: document.getElementById('preName').value.trim(),
-      customer: document.getElementById('preCust').value.trim(),
-      buyer: document.getElementById('preBuyer').value,
-      rayCard: document.getElementById('preRayCard').value,
-      loc: document.getElementById('preLoc').value.trim(),
-      isTaxFree: document.getElementById('preIsTaxFree').value === 'true',
-      taxPrice: Number(document.getElementById('preTaxPrice').value || 0),
-      taxRate: Number(document.getElementById('preTaxRate').value || 0),
-      taxFreePrice: Number(document.getElementById('preTaxFreePrice').value || 0),
-      qty: Number(document.getElementById('preQty').value || 1),
-      sellPrice: Number(document.getElementById('preSellPrice').value || 0)
-    };
-
-    if (!data.name) {
-      alert("請輸入商品名稱");
-      return;
-    }
-
-    if (!data.taxPrice) {
-      alert("請輸入含稅價");
-      return;
-    }
-
-    if (!data.buyer) {
-      alert("請選擇負責買手");
-      return;
-    }
-
-    const order = {
-      id: 'O-' + Date.now().toString(36),
-      type: 'preorder',
-      country: 'JP',
-      name: data.name,
-      qty: data.qty,
-      buyer: data.buyer,
-      customer: data.customer,
-      loc: data.loc,
-      currency: 'JPY',
-      cost: data.taxPrice,
-      sellPrice: data.sellPrice || null,
-      isBought: false,   // ✅ 預設未買
-      extra: {
-        isTaxFree: data.isTaxFree,
-        taxRate: data.taxRate,
-        taxFreePrice: data.taxFreePrice,
-        rayCard: data.rayCard
+    const STORAGE_KEY = "yunaOrders";
+  
+    /* -------------------------
+     * Storage helpers
+     * ------------------------- */
+    function loadOrders() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      } catch (e) {
+        console.error("loadOrders failed:", e);
+        return [];
       }
-    };
-
-    addOrderToStorage(order);
-    alert("已儲存到採購明細（日本預購）");
-
-    // 儲存後清空表單（保留 hidden）
-    document.querySelectorAll("input").forEach(input => {
-      if (input.type !== "hidden" && input.id !== "preImg") input.value = "";
-    });
-    document.getElementById('preQty').value = 1;
-
-    // 重置買手按鈕
-    const buttons = document.querySelectorAll('#preBuyerGroup .btn-opt');
-    buttons.forEach(btn => btn.classList.remove('active'));
-    document.getElementById('preRayCardOptions').style.display = 'none';
-
-    // 重畫列表
-    renderJPPreorders();
-  }
-
-  /* =========================
-     下方列表：更新欄位 / Ray 卡片 / 已買
-     ========================= */
-
-  function updateOrderField(id, field, rawValue, valueType = 'string') {
-    const list = loadOrders();
-    const idx = list.findIndex(o => o.id === id);
-    if (idx === -1) return;
-
-    let value = rawValue;
-
-    if (valueType === 'number') {
-      if (rawValue === '') {
-        value = null;
-      } else {
-        value = Number(rawValue);
-        if (Number.isNaN(value)) value = null;
-      }
-    } else if (valueType === 'int') {
-      if (rawValue === '') {
-        value = null;
-      } else {
-        value = parseInt(rawValue, 10);
-        if (Number.isNaN(value)) value = null;
-      }
-    } else if (valueType === 'bool') {
-      value = !!rawValue;
-    } else {
-      value = rawValue.trim();
     }
-
-    list[idx][field] = value;
-    saveOrdersToStorage(list);
-
-    // 買手改成 Ray 或不是 Ray，要更新 Ray 卡片欄位顯示
-    if (field === 'buyer') {
+  
+    function saveOrders(list) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    }
+  
+    function upsertOrder(updated) {
+      const list = loadOrders();
+      const idx = list.findIndex(o => o.id === updated.id);
+      if (idx >= 0) list[idx] = updated;
+      else list.push(updated);
+      saveOrders(list);
+    }
+  
+    function deleteOrder(id) {
+      const ok = confirm("確定要刪除這筆資料嗎？");
+      if (!ok) return;
+      const list = loadOrders().filter(o => o.id !== id);
+      saveOrders(list);
       renderJPPreorders();
     }
-  }
-
-  function updateOrderExtraField(id, key, rawValue) {
-    const list = loadOrders();
-    const idx = list.findIndex(o => o.id === id);
-    if (idx === -1) return;
-
-    if (!list[idx].extra) list[idx].extra = {};
-    list[idx].extra[key] = rawValue.trim();
-    saveOrdersToStorage(list);
-  }
-
-  function toggleBought(id, checked) {
-    updateOrderField(id, 'isBought', checked, 'bool');
-    renderJPPreorders();
-  }
-
-  /* =========================
-     下方列表：渲染日本預購
-     ========================= */
-
-  function renderJPPreorders() {
-    const container = document.getElementById('preOrderList');
-    const emptyState = document.getElementById('jpEmptyState');
-    container.innerHTML = '';
-
-    const list = loadOrders().filter(o => o.type === 'preorder' && o.country === 'JP');
-
-    if (list.length === 0) {
-      emptyState.style.display = 'block';
-      return;
-    } else {
-      emptyState.style.display = 'none';
+  
+    /* -------------------------
+     * File -> base64
+     * ------------------------- */
+    function readImageAsBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
     }
-
-    // 最新在上
-    list.sort((a, b) => (a.id < b.id ? 1 : -1));
-
-    list.forEach(order => {
-      const div = document.createElement('div');
-      div.className = 'order-card';
-
-      const costVal = order.cost != null ? order.cost : '';
-      const sellVal = order.sellPrice != null ? order.sellPrice : '';
-      const isBought = !!order.isBought;
-      const buyer = order.buyer || '';
-      const rayCard = order.extra && order.extra.rayCard ? order.extra.rayCard : '';
-
-      // Ray 信用卡欄位只有 buyer = Ray 時顯示
-      const rayCardField = `
-        <div class="field" ${buyer === 'Ray' ? '' : 'style="display:none;"'}>
-          <span class="field-label">Ray 信用卡</span>
-          <select
-            class="field-select"
-            onchange="updateOrderExtraField('${order.id}', 'rayCard', this.value)"
-          >
-            <option value="">未指定</option>
-            <option value="na爸卡" ${rayCard === 'na爸卡' ? 'selected' : ''}>na爸卡</option>
-            <option value="ray卡" ${rayCard === 'ray卡' ? 'selected' : ''}>ray卡</option>
-            <option value="qp卡" ${rayCard === 'qp卡' ? 'selected' : ''}>qp卡</option>
-          </select>
-        </div>
-      `;
-
-      div.innerHTML = `
-        <div class="order-title-row">
-          <input
-            class="order-name-input"
-            value="${order.name || ''}"
-            placeholder="商品名稱"
-            oninput="updateOrderField('${order.id}', 'name', this.value, 'string')"
-          />
-          <span class="badge ${isBought ? 'badge--bought' : ''}">
-            ${isBought ? '已買' : '未買'}
-          </span>
-        </div>
-
-        <div class="field">
-          <span class="field-label">數量</span>
-          <select
-            class="field-select"
-            onchange="updateOrderField('${order.id}', 'qty', this.value, 'int')"
-          >
-            ${[1,2,3,4,5,6,7,8,9,10].map(n => `
-              <option value="${n}" ${order.qty == n ? 'selected' : ''}>${n}</option>
-            `).join('')}
-          </select>
-        </div>
-
-          <div class="field">
-            <span class="field-label">顧客</span>
-            <input
-              class="field-input"
-              type="text"
-              value="${order.customer || ''}"
-              oninput="updateOrderField('${order.id}', 'customer', this.value, 'string')"
-            />
-          </div>
-
-          <div class="field">
-            <span class="field-label">買手</span>
-            <select
-              class="field-select"
-              onchange="updateOrderField('${order.id}', 'buyer', this.value, 'string')"
-            >
-              <option value="">未指定</option>
-              <option value="Ray"   ${buyer === 'Ray'   ? 'selected' : ''}>Ray</option>
-              <option value="Nana"  ${buyer === 'Nana'  ? 'selected' : ''}>Nana</option>
-              <option value="Cupid" ${buyer === 'Cupid' ? 'selected' : ''}>Cupid</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <span class="field-label">地點</span>
-            <input
-              class="field-input"
-              type="text"
-              value="${order.loc || ''}"
-              oninput="updateOrderField('${order.id}', 'loc', this.value, 'string')"
-            />
-          </div>
-
-          <div class="field">
-            <span class="field-label">成本 (¥)</span>
-            <input
-              class="field-input"
-              type="number"
-              value="${costVal}"
-              oninput="updateOrderField('${order.id}', 'cost', this.value, 'number')"
-            />
-          </div>
-
-          <div class="field">
-            <span class="field-label">售價 (NT$)</span>
-            <input
-              class="field-input"
-              type="number"
-              value="${sellVal}"
-              oninput="updateOrderField('${order.id}', 'sellPrice', this.value, 'number')"
-            />
-          </div>
-
-          ${rayCardField}
-        </div>
-
-        <div class="order-footer-row">
-          <label class="toggle-bought">
-            <input
-              type="checkbox"
-              ${isBought ? 'checked' : ''}
-              onchange="toggleBought('${order.id}', this.checked)"
-            />
-            <span>${isBought ? '已標記為已買' : '點一下標記為已買'}</span>
-          </label>
-        </div>
-      `;
-
-      container.appendChild(div);
-    });
-  }
-
-  // 初始載入時，把日本預購清單畫出來
-  renderJPPreorders();
+  
+    /* -------------------------
+     * Form controls (top form)
+     * ------------------------- */
+    function togglePreTax(hasTaxFree) {
+      const yesBtn = document.getElementById("taxBtnYes");
+      const noBtn = document.getElementById("taxBtnNo");
+      const taxRateGroup = document.getElementById("taxRateGroup");
+      const taxFreeGroup = document.getElementById("preTaxFreeGroup");
+      const isTaxFreeInput = document.getElementById("preIsTaxFree");
+  
+      if (hasTaxFree) {
+        isTaxFreeInput.value = "true";
+        yesBtn.classList.add("active");
+        noBtn.classList.remove("active");
+        taxRateGroup.style.display = "block";
+        taxFreeGroup.style.display = "block";
+      } else {
+        isTaxFreeInput.value = "false";
+        yesBtn.classList.remove("active");
+        noBtn.classList.add("active");
+        taxRateGroup.style.display = "none";
+        taxFreeGroup.style.display = "none";
+        document.getElementById("preTaxRate").value = 10;
+        document.getElementById("preTaxFreePrice").value = "";
+      }
+    }
+  
+    function setPreBuyer(name, btnEl) {
+      document.getElementById("preBuyer").value = name;
+  
+      const group = document.getElementById("preBuyerGroup");
+      group.querySelectorAll(".btn-opt").forEach(b => b.classList.remove("active"));
+      btnEl.classList.add("active");
+  
+      const rayBox = document.getElementById("preRayCardOptions");
+      if (name === "Ray") {
+        rayBox.style.display = "block";
+      } else {
+        rayBox.style.display = "none";
+        document.getElementById("preRayCard").value = "";
+        rayBox.querySelectorAll(".btn-opt").forEach(b => b.classList.remove("active"));
+      }
+    }
+  
+    function setPreRayCard(cardName, btnEl) {
+      document.getElementById("preRayCard").value = cardName;
+  
+      const rayBox = document.getElementById("preRayCardOptions");
+      rayBox.querySelectorAll(".btn-opt").forEach(b => b.classList.remove("active"));
+      btnEl.classList.add("active");
+    }
+  
+    /* -------------------------
+     * Save preorder (JP)
+     * ------------------------- */
+    async function savePreOrder() {
+      const fileInput = document.getElementById("preImg");
+      let imageBase64 = null;
+      if (fileInput && fileInput.files && fileInput.files.length > 0) {
+        imageBase64 = await readImageAsBase64(fileInput.files[0]);
+      }
+  
+      const name = document.getElementById("preName").value.trim();
+      const customer = document.getElementById("preCust").value.trim();
+      const buyer = document.getElementById("preBuyer").value;
+      const rayCard = document.getElementById("preRayCard").value;
+  
+      const loc = document.getElementById("preLoc").value.trim();
+  
+      const isTaxFree = document.getElementById("preIsTaxFree").value === "true";
+      const taxPrice = Number(document.getElementById("preTaxPrice").value || 0);
+      const taxRate = Number(document.getElementById("preTaxRate").value || 0);
+      const taxFreePrice = Number(document.getElementById("preTaxFreePrice").value || 0);
+  
+      const qty = Number(document.getElementById("preQty").value || 1);
+      const sellPrice = Number(document.getElementById("preSellPrice").value || 0);
+  
+      if (!name) return alert("請輸入商品名稱");
+      if (!taxPrice) return alert("請輸入含稅價");
+      if (!buyer) return alert("請選擇負責買手");
+      if (buyer === "Ray" && !rayCard) {
+        // 你不想強制也可以拿掉這行
+        // return alert("Ray 請選擇信用卡");
+      }
+  
+      const order = {
+        id: "O-" + Date.now().toString(36),
+        type: "preorder",
+        country: "JP",
+        name,
+        qty: Number.isFinite(qty) && qty > 0 ? qty : 1,
+        buyer,
+        customer,
+        loc,
+        currency: "JPY",
+        cost: taxPrice,
+        sellPrice: sellPrice || null,
+        isBought: false,
+        image: imageBase64,
+        extra: {
+          isTaxFree,
+          taxRate,
+          taxFreePrice,
+          rayCard: buyer === "Ray" ? rayCard : ""
+        }
+      };
+  
+      upsertOrder(order);
+      renderJPPreorders();
+  
+      // reset (保留退稅按鈕狀態為「無退稅」)
+      document.getElementById("preImg").value = "";
+      document.getElementById("preName").value = "";
+      document.getElementById("preCust").value = "";
+      document.getElementById("preLoc").value = "";
+      document.getElementById("preTaxPrice").value = "";
+      document.getElementById("preQty").value = 1;
+      document.getElementById("preSellPrice").value = "";
+      togglePreTax(false);
+  
+      // reset buyer UI
+      document.getElementById("preBuyer").value = "";
+      document.querySelectorAll("#preBuyerGroup .btn-opt").forEach(b => b.classList.remove("active"));
+      document.getElementById("preRayCardOptions").style.display = "none";
+      document.getElementById("preRayCard").value = "";
+  
+      alert("已儲存");
+    }
+  
+    /* -------------------------
+     * Inline update helpers
+     * ------------------------- */
+    function updateOrderField(id, field, rawValue, valueType = "string") {
+      const list = loadOrders();
+      const idx = list.findIndex(o => o.id === id);
+      if (idx === -1) return;
+  
+      let v = rawValue;
+      if (valueType === "number") {
+        v = rawValue === "" ? null : Number(rawValue);
+        if (Number.isNaN(v)) v = null;
+      } else if (valueType === "int") {
+        v = rawValue === "" ? null : parseInt(rawValue, 10);
+        if (Number.isNaN(v)) v = null;
+      } else if (valueType === "bool") {
+        v = !!rawValue;
+      } else {
+        v = String(rawValue ?? "").trim();
+      }
+  
+      list[idx][field] = v;
+      saveOrders(list);
+    }
+  
+    function updateOrderExtraField(id, key, rawValue) {
+      const list = loadOrders();
+      const idx = list.findIndex(o => o.id === id);
+      if (idx === -1) return;
+  
+      if (!list[idx].extra) list[idx].extra = {};
+      list[idx].extra[key] = String(rawValue ?? "").trim();
+      saveOrders(list);
+    }
+  
+    function toggleBought(id, checked) {
+      updateOrderField(id, "isBought", checked, "bool");
+      renderJPPreorders();
+    }
+  
+    async function updateOrderImage(id, fileInputEl) {
+      if (!fileInputEl.files || fileInputEl.files.length === 0) return;
+      const img = await readImageAsBase64(fileInputEl.files[0]);
+  
+      const list = loadOrders();
+      const idx = list.findIndex(o => o.id === id);
+      if (idx === -1) return;
+  
+      list[idx].image = img;
+      saveOrders(list);
+      renderJPPreorders();
+    }
+  
+    function toggleDetail(id) {
+      const el = document.getElementById("detail-" + id);
+      if (!el) return;
+      el.style.display = el.style.display === "none" ? "block" : "none";
+    }
+  
+    /* -------------------------
+     * Render (same layout as KR screenshot)
+     * ------------------------- */
+    function safeText(s) {
+      return String(s ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  
+    function renderJPPreorders() {
+      const container = document.getElementById("preOrderList");
+      const emptyState = document.getElementById("jpEmptyState");
+      if (!container) return;
+  
+      container.innerHTML = "";
+  
+      const list = loadOrders()
+        .filter(o => o.type === "preorder" && o.country === "JP")
+        .sort((a, b) => (a.id < b.id ? 1 : -1));
+  
+      if (list.length === 0) {
+        if (emptyState) emptyState.style.display = "block";
+        return;
+      } else {
+        if (emptyState) emptyState.style.display = "none";
+      }
+  
+      // group by customer
+      const grouped = {};
+      for (const o of list) {
+        const key = o.customer ? o.customer.trim() : "未填顧客";
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(o);
+      }
+  
+      Object.keys(grouped).forEach(customerName => {
+        const groupWrap = document.createElement("div");
+        groupWrap.style.border = "1px solid var(--soft-border)";
+        groupWrap.style.borderRadius = "18px";
+        groupWrap.style.background = "#fff";
+        groupWrap.style.boxShadow = "var(--shadow-soft)";
+        groupWrap.style.overflow = "hidden";
+  
+        const header = document.createElement("div");
+        header.style.display = "flex";
+        header.style.alignItems = "center";
+        header.style.gap = "10px";
+        header.style.padding = "14px 16px";
+        header.style.borderBottom = "1px solid var(--soft-border)";
+        header.innerHTML = `
+          <div style="font-size:22px; line-height:1;">👤</div>
+          <div style="font-weight:800; font-size:1.05rem;">${safeText(customerName)}</div>
+        `;
+        groupWrap.appendChild(header);
+  
+        grouped[customerName].forEach((order, i) => {
+          const isBought = !!order.isBought;
+  
+          const row = document.createElement("div");
+          row.style.padding = "14px 16px";
+          row.style.borderBottom = i === grouped[customerName].length - 1 ? "none" : "1px solid var(--soft-border)";
+          row.style.background = isBought ? "#ecfdf3" : "#ffffff";
+  
+          const rayCard = order.extra && order.extra.rayCard ? order.extra.rayCard : "";
+  
+          row.innerHTML = `
+            <!-- 收合摘要列 -->
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <div style="display:flex; gap:12px; align-items:center; min-width:0;">
+                ${order.image ? `<img src="${order.image}" alt="img"
+                  style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex:0 0 auto;">` : ""}
+  
+                <div style="min-width:0;">
+                  <div style="font-size:1.25rem; font-weight:800; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    ${safeText(order.name)}
+                  </div>
+                  <div style="margin-top:4px; color:var(--text-sub); font-size:0.9rem;">
+                    成本 ${safeText(order.cost ?? 0)} ¥ ｜ 售價 ${safeText(order.sellPrice ?? 0)} NT$
+                  </div>
+                </div>
+              </div>
+  
+              <div style="display:flex; align-items:center; gap:10px; flex:0 0 auto;">
+                <label style="display:flex; align-items:center; gap:6px; font-size:0.95rem; color:${isBought ? "#16a34a" : "var(--text-sub)"};">
+                  <input type="checkbox" ${isBought ? "checked" : ""} onchange="toggleBought('${order.id}', this.checked)">
+                  ${isBought ? "已買" : "未買"}
+                </label>
+  
+                <button type="button"
+                  onclick="toggleDetail('${order.id}')"
+                  style="border:1px solid var(--soft-border); background:#fff; border-radius:8px; padding:6px 8px; cursor:pointer;">
+                  ✏
+                </button>
+  
+                <button type="button"
+                  onclick="deleteOrder('${order.id}')"
+                  style="border:1px solid var(--soft-border); background:#fff; border-radius:8px; padding:6px 8px; cursor:pointer; color:#ef4444;">
+                  🗑
+                </button>
+              </div>
+            </div>
+  
+            <!-- 展開詳細：什麼都有 -->
+            <div id="detail-${order.id}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--soft-border);">
+  
+              <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px;">
+                <div style="grid-column: 1 / -1;">
+                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">商品照片</div>
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    ${order.image ? `<img src="${order.image}" alt="img"
+                      style="width:56px;height:56px;border-radius:12px;object-fit:cover;border:1px solid var(--soft-border);">` : ""}
+                    <input type="file" accept="image/*" onchange="updateOrderImage('${order.id}', this)">
+                  </div>
+                </div>
+  
+                <div>
+                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">商品名</div>
+                  <input class="field-input" type="text" value="${safeText(order.name)}"
+                    oninput="updateOrderField('${order.id}','name',this.value,'string')">
+                </div>
+  
+                <div>
+                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">顧客</div>
+                  <input class="field-input" type="text" value="${safeText(order.customer || '')}"
+                    oninput="updateOrderField('${order.id}','customer',this.value,'string')">
+                </div>
+  
+                <div>
+                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">買手</div>
+                  <select class="field-select"
+                    onchange="updateOrderField('${order.id}','buyer',this.value,'string'); renderJPPreorders();">
+                    <option value="">未指定</option>
+                    <option value="Ray"   ${order.buyer === "Ray" ? "selected" : ""}>Ray</option>
+                    <option value="Nana"  ${order.buyer === "Nana" ? "selected" : ""}>Nana</option>
+                    <option value="Cupid" ${order.buyer === "Cupid" ? "selected" : ""}>Cupid</option>
+                  </select>
+                </div>
+  
+                <div>
+                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">數量</div>
+                  <select class="field-select"
+                    onchange="updateOrderField('${order.id}','qty',this.value,'int')">
+                    ${Array.from({length: 10}, (_, k) => k + 1).map(n => `
+                      <option value="${n}" ${Number(order.qty || 1) === n ? "selected" : ""}>${n}</option>
+                    `).join("")}
+                  </select>
+                </div>
+  
+                <div>
+                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">成本 (¥)</div>
+                  <input class="field-input" type="number" value="${safeText(order.cost ?? '')}"
+                    oninput="updateOrderField('${order.id}','cost',this.value,'number')">
+                </div>
+  
+                <div>
+                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">售價 (NT$)</div>
+                  <input class="field-input" type="number" value="${safeText(order.sellPrice ?? '')}"
+                    oninput="updateOrderField('${order.id}','sellPrice',this.value,'number')">
+                </div>
+  
+                <div style="${order.buyer === "Ray" ? "" : "display:none;"}">
+                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">Ray 信用卡</div>
+                  <select class="field-select"
+                    onchange="updateOrderExtraField('${order.id}','rayCard',this.value)">
+                    <option value="">未指定</option>
+                    <option value="na爸卡" ${rayCard === "na爸卡" ? "selected" : ""}>na爸卡</option>
+                    <option value="ray卡"  ${rayCard === "ray卡"  ? "selected" : ""}>ray卡</option>
+                    <option value="qp卡"   ${rayCard === "qp卡"   ? "selected" : ""}>qp卡</option>
+                  </select>
+                </div>
+  
+                <div>
+                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">地點</div>
+                  <input class="field-input" type="text" value="${safeText(order.loc || '')}"
+                    oninput="updateOrderField('${order.id}','loc',this.value,'string')">
+                </div>
+  
+                <div style="grid-column:1 / -1;">
+                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">退稅資訊（可選）</div>
+                  <div style="display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px;">
+                    <div>
+                      <div style="font-size:0.72rem; color:var(--text-sub); margin-bottom:6px;">是否退稅</div>
+                      <select class="field-select"
+                        onchange="updateOrderExtraField('${order.id}','isTaxFree',this.value)">
+                        <option value="false" ${(order.extra && String(order.extra.isTaxFree) === "false") ? "selected" : ""}>無</option>
+                        <option value="true"  ${(order.extra && String(order.extra.isTaxFree) === "true") ? "selected" : ""}>有</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div style="font-size:0.72rem; color:var(--text-sub); margin-bottom:6px;">稅率</div>
+                      <input class="field-input" type="number"
+                        value="${safeText(order.extra && order.extra.taxRate != null ? order.extra.taxRate : '')}"
+                        oninput="updateOrderExtraField('${order.id}','taxRate',this.value)">
+                    </div>
+                    <div>
+                      <div style="font-size:0.72rem; color:var(--text-sub); margin-bottom:6px;">退稅價</div>
+                      <input class="field-input" type="number"
+                        value="${safeText(order.extra && order.extra.taxFreePrice != null ? order.extra.taxFreePrice : '')}"
+                        oninput="updateOrderExtraField('${order.id}','taxFreePrice',this.value)">
+                    </div>
+                  </div>
+                </div>
+              </div>
+  
+              <div style="margin-top:10px; font-size:0.78rem; color:var(--text-sub);">
+                ※ 修改會即時儲存（不用另外按儲存）
+              </div>
+            </div>
+          `;
+  
+          groupWrap.appendChild(row);
+        });
+  
+        container.appendChild(groupWrap);
+      });
+    }
+  
+    // 初次載入畫清單
+    renderJPPreorders();
   </script>
 </body>
 </html>
