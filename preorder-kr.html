@@ -389,6 +389,7 @@
     /* ========= 下方列表：渲染 ========= */
 
     function renderKRPreorders() {
+
       const container = document.getElementById('krPreorderList');
       const emptyState = document.getElementById('krEmptyState');
       container.innerHTML = '';
@@ -417,9 +418,8 @@
     
         const header = document.createElement('div');
         header.className = 'order-title-row';
-        header.style.cursor = 'pointer';
         header.innerHTML = `
-          <strong>${customerName}</strong>
+          <strong>👤 ${customerName}</strong>
           <span class="badge">展開</span>
         `;
     
@@ -430,6 +430,8 @@
         content.style.flexDirection = 'column';
         content.style.gap = '6px';
     
+        header.style.cursor = 'pointer';
+    
         header.onclick = () => {
           const isOpen = content.style.display === 'flex';
           content.style.display = isOpen ? 'none' : 'flex';
@@ -438,16 +440,18 @@
     
         grouped[customerName].forEach(order => {
     
-          const row = document.createElement('div');
-          row.style.borderTop = '1px solid var(--soft-border)';
-          row.style.paddingTop = '6px';
-    
           const isBought = !!order.isBought;
     
-          row.innerHTML = `
-            <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.85rem;">
+          const row = document.createElement('div');
+          row.style.borderTop = '1px solid var(--soft-border)';
+          row.style.paddingTop = '8px';
     
-              <div style="display:flex; align-items:center; gap:8px;">
+          row.innerHTML = `
+    
+            <!-- ===== 收合時顯示的摘要列 ===== -->
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.9rem;">
+    
+              <div style="display:flex; align-items:center; gap:10px;">
                 ${order.image ? `<img src="${order.image}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;">` : ''}
                 <div>
                   <div><strong>${order.name}</strong></div>
@@ -457,14 +461,51 @@
                 </div>
               </div>
     
-              <label style="display:flex;align-items:center;gap:4px;font-size:0.75rem;">
+              <label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;">
                 <input type="checkbox"
                   ${isBought ? 'checked' : ''}
                   onchange="toggleBought('${order.id}', this.checked)">
                 ${isBought ? '已買' : '未買'}
               </label>
             </div>
+    
+            <!-- ===== 展開時顯示的詳細資料 ===== -->
+            <div class="detail-section" style="display:none; margin-top:8px; font-size:0.8rem;">
+    
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+    
+                <div>
+                  數量：
+                  <input type="number"
+                    value="${order.qty || 1}"
+                    style="width:60px"
+                    oninput="updateOrderField('${order.id}','qty',this.value,'int')">
+                </div>
+    
+                <div>
+                  買手：
+                  <select onchange="updateOrderField('${order.id}','buyer',this.value,'string')">
+                    <option value="">未指定</option>
+                    <option value="Nana" ${order.buyer==='Nana'?'selected':''}>Nana</option>
+                    <option value="Cupid" ${order.buyer==='Cupid'?'selected':''}>Cupid</option>
+                  </select>
+                </div>
+    
+                <div>
+                  幣別：${order.currency || '-'}
+                </div>
+    
+              </div>
+            </div>
           `;
+    
+          // 點擊商品列切換展開
+          row.onclick = function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    
+            const detail = row.querySelector('.detail-section');
+            detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+          };
     
           content.appendChild(row);
         });
@@ -474,9 +515,6 @@
         container.appendChild(groupCard);
       });
     }
-
-    // 初始載入時，把韓國預購清單畫出來
-    renderKRPreorders();
   </script>
 </body>
 </html>
