@@ -419,101 +419,117 @@
     const container = document.getElementById('krPreorderList');
     const emptyState = document.getElementById('krEmptyState');
     container.innerHTML = '';
-
+  
     const list = loadOrders().filter(o => o.type === 'preorder' && o.country === 'KR');
-
+  
     if (list.length === 0) {
       emptyState.style.display = 'block';
       return;
     } else {
       emptyState.style.display = 'none';
     }
-
+  
+    // 依顧客分組
     const grouped = {};
     list.forEach(order => {
       const key = order.customer || '未填顧客';
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(order);
     });
-
+  
     Object.keys(grouped).forEach(customerName => {
       const groupCard = document.createElement('div');
       groupCard.className = 'order-card';
-
+  
       const header = document.createElement('div');
       header.className = 'order-title-row';
       header.innerHTML = `<strong>👤 ${customerName}</strong>`;
-
+  
       const content = document.createElement('div');
       content.style.display = 'flex';
       content.style.flexDirection = 'column';
       content.style.gap = '8px';
       content.style.marginTop = '6px';
-
+  
       grouped[customerName].forEach(order => {
         const isBought = !!order.isBought;
-
         const row = document.createElement('div');
         row.style.borderTop = '1px solid var(--soft-border)';
         row.style.paddingTop = '8px';
-
+        // ✅ 勾已買 → 整列淡綠底
+        row.style.background = isBought ? '#ecfdf3' : '#ffffff';
+  
+        const boughtColor = isBought ? '#16a34a' : '#6b7280';
+        const currencyText = order.currency === 'USD'
+          ? 'US$'
+          : (order.currency === 'KRW' ? '₩' : (order.currency || ''));
+  
         row.innerHTML = `
           <!-- 收合時：摘要列 -->
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div style="display:flex; align-items:center; gap:10px;">
-              ${order.image ? `<img src="${order.image}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;">` : ''}
+              ${order.image
+                ? `<img src="${order.image}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;">`
+                : ''
+              }
               <div>
                 <div><strong>${order.name || ''}</strong></div>
                 <div style="font-size:0.75rem;color:#6b7280;">
-                  成本 ${order.cost || 0} ｜ 售價 ${order.sellPrice || 0}
+                  成本 ${order.cost || 0} ${currencyText} ｜ 售價 ${order.sellPrice || 0} NT$
                 </div>
               </div>
             </div>
-
+  
             <div style="display:flex; gap:8px; align-items:center;">
-              <label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;">
+              <label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;color:${boughtColor};">
                 <input type="checkbox"
                   ${isBought ? 'checked' : ''}
                   onchange="toggleBought('${order.id}', this.checked)">
                 ${isBought ? '已買' : '未買'}
               </label>
-
-              <button type="button" onclick="toggleDetail('${order.id}')" style="font-size:0.75rem;">✏</button>
-              <button type="button" onclick="deleteOrder('${order.id}')" style="font-size:0.75rem;color:red;">🗑</button>
+  
+              <button type="button"
+                onclick="toggleDetail('${order.id}')"
+                style="font-size:0.75rem;">✏</button>
+  
+              <button type="button"
+                onclick="deleteOrder('${order.id}')"
+                style="font-size:0.75rem;color:red;">🗑</button>
             </div>
           </div>
-
+  
           <!-- 展開時：詳細區塊 -->
           <div id="detail-${order.id}" style="display:none; margin-top:8px; font-size:0.8rem;">
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
+  
               <div>
                 商品名：
                 <input type="text"
                   value="${order.name || ''}"
                   oninput="updateOrderField('${order.id}','name',this.value,'string')">
               </div>
-
+  
               <div>
                 成本：
                 <input type="number"
                   value="${order.cost || ''}"
                   oninput="updateOrderField('${order.id}','cost',this.value,'number')">
               </div>
-
+  
               <div>
                 售價：
                 <input type="number"
                   value="${order.sellPrice || ''}"
                   oninput="updateOrderField('${order.id}','sellPrice',this.value,'number')">
               </div>
-
+  
               <div>
                 數量：
                 <input type="number"
                   value="${order.qty || 1}"
                   oninput="updateOrderField('${order.id}','qty',this.value,'int')">
               </div>
-
+  
               <div>
                 買手：
                 <select onchange="updateOrderField('${order.id}','buyer',this.value,'string')">
@@ -522,13 +538,23 @@
                   <option value="Cupid" ${order.buyer === 'Cupid' ? 'selected' : ''}>Cupid</option>
                 </select>
               </div>
+  
+              <!-- ✅ 幣別選擇 -->
+              <div>
+                幣別：
+                <select onchange="updateOrderField('${order.id}','currency',this.value,'string')">
+                  <option value="KRW" ${order.currency === 'KRW' || !order.currency ? 'selected' : ''}>韓幣 (₩)</option>
+                  <option value="USD" ${order.currency === 'USD' ? 'selected' : ''}>美金 (US$)</option>
+                </select>
+              </div>
+  
             </div>
           </div>
         `;
-
+  
         content.appendChild(row);
       });
-
+  
       groupCard.appendChild(header);
       groupCard.appendChild(content);
       container.appendChild(groupCard);
