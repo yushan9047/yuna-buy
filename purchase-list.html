@@ -7,9 +7,7 @@
   <title>採購明細</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    .filter-card {
-      margin-bottom: 16px;
-    }
+    .filter-card { margin-bottom: 16px; }
 
     .order-list {
       display: flex;
@@ -27,12 +25,36 @@
       gap: 6px;
     }
 
+    /* ✅ 已買預購：淡綠區隔 */
+    .order-card--bought {
+      background: #ecfdf3;
+      border-color: #bbf7d0;
+    }
+
     .order-title-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       margin-bottom: 4px;
+    }
+
+    .title-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid var(--soft-border);
+      background: #fff;
+      flex: 0 0 auto;
     }
 
     .order-name-input {
@@ -43,6 +65,7 @@
       background: transparent;
       padding: 2px 4px;
       border-radius: 8px;
+      min-width: 0;
     }
 
     .order-name-input:focus {
@@ -55,6 +78,8 @@
       gap: 6px;
       align-items: center;
       flex-wrap: wrap;
+      justify-content: flex-end;
+      flex: 0 0 auto;
     }
 
     .badge {
@@ -66,19 +91,18 @@
       text-transform: uppercase;
     }
 
-    .badge--onsite {
-      background: #dbeafe;
-      color: #1d4ed8;
-    }
+    .badge--onsite { background: #dbeafe; color: #1d4ed8; }
+    .badge--preorder { background: #dcfce7; color: #15803d; }
+    .badge--country { background: #f3f4f6; color: #4b5563; }
 
-    .badge--preorder {
+    /* ✅ 預購是否購買 badge */
+    .badge--bought {
       background: #dcfce7;
-      color: #15803d;
+      color: #166534;
     }
-
-    .badge--country {
+    .badge--notbought {
       background: #f3f4f6;
-      color: #4b5563;
+      color: #6b7280;
     }
 
     .order-fields {
@@ -123,16 +147,31 @@
     }
 
     @media (min-width: 700px) {
-      .order-fields {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-      }
+      .order-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
 
     .order-actions {
       display: flex;
-      justify-content: flex-end;
-      gap: 8px;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
       margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .toggle-bought {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      user-select: none;
+    }
+
+    .toggle-bought input {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
     }
 
     .order-action-btn {
@@ -148,18 +187,14 @@
       gap: 4px;
     }
 
-    .order-action-btn:hover {
-      background: var(--soft);
-    }
+    .order-action-btn:hover { background: var(--soft); }
 
     .order-action-btn--danger {
       border-color: #fecaca;
       color: #b91c1c;
     }
 
-    .order-action-btn--danger:hover {
-      background: #fee2e2;
-    }
+    .order-action-btn--danger:hover { background: #fee2e2; }
 
     .empty-state {
       margin-top: 12px;
@@ -222,6 +257,10 @@
     let orders = loadOrders();
     let currentFilter = 'all';
 
+    function refreshOrders() {
+      orders = loadOrders();
+    }
+
     function setFilter(type, btnEl) {
       currentFilter = type;
 
@@ -241,28 +280,28 @@
       let value = rawValue;
 
       if (valueType === 'number') {
-        if (rawValue === '') {
-          value = null;
-        } else {
+        if (rawValue === '') value = null;
+        else {
           value = Number(rawValue);
           if (Number.isNaN(value)) value = null;
         }
       } else if (valueType === 'int') {
-        if (rawValue === '') {
-          value = null;
-        } else {
+        if (rawValue === '') value = null;
+        else {
           value = parseInt(rawValue, 10);
           if (Number.isNaN(value)) value = null;
         }
+      } else if (valueType === 'bool') {
+        value = !!rawValue;
       } else {
-        value = rawValue.trim();
+        value = String(rawValue ?? '').trim();
       }
 
       orders[idx][field] = value;
       saveOrdersToStorage(orders);
 
-      // 如果改的是 buyer，要讓 Ray 卡片那格顯示/隱藏，所以重畫一次
-      if (field === 'buyer') {
+      // buyer / isBought 需要反映 UI
+      if (field === 'buyer' || field === 'isBought') {
         renderList();
       }
     }
@@ -272,10 +311,8 @@
       const idx = orders.findIndex(o => o.id === id);
       if (idx === -1) return;
 
-      if (!orders[idx].extra) {
-        orders[idx].extra = {};
-      }
-      orders[idx].extra[key] = rawValue.trim();
+      if (!orders[idx].extra) orders[idx].extra = {};
+      orders[idx].extra[key] = String(rawValue ?? '').trim();
       saveOrdersToStorage(orders);
     }
 
@@ -295,6 +332,8 @@
     }
 
     function renderList() {
+      refreshOrders();
+
       const container = document.getElementById('orderList');
       const emptyState = document.getElementById('emptyState');
       container.innerHTML = '';
@@ -314,7 +353,11 @@
 
       filtered.forEach(order => {
         const div = document.createElement('div');
-        div.className = 'order-card';
+
+        const isPreorder = order.type === 'preorder';
+        const isBought = !!order.isBought;
+
+        div.className = 'order-card' + (isPreorder && isBought ? ' order-card--bought' : '');
 
         const typeLabel = order.type === 'onsite' ? '現場採購' : '預購';
         const typeBadgeClass = order.type === 'onsite' ? 'badge--onsite' : 'badge--preorder';
@@ -359,7 +402,7 @@
           </div>
         `;
 
-        // JP 專用 Ray 信用卡欄位（只有 country=JP 才會出現）
+        // JP 專用 Ray 信用卡欄位
         let cardFieldHtml = '';
         if (isJP) {
           const rayCard = (order.extra && order.extra.rayCard) ? order.extra.rayCard : '';
@@ -381,16 +424,42 @@
           `;
         }
 
+        // ✅ 預購：是否購買 toggle（只有 preorder 才顯示）
+        const boughtBadgeHtml = isPreorder ? `
+          <span class="badge ${isBought ? 'badge--bought' : 'badge--notbought'}">
+            ${isBought ? '已買' : '未買'}
+          </span>
+        ` : '';
+
+        const boughtToggleHtml = isPreorder ? `
+          <label class="toggle-bought" style="color:${isBought ? '#166534' : 'var(--text-sub)'};">
+            <input
+              type="checkbox"
+              ${isBought ? 'checked' : ''}
+              onchange="updateOrderField('${order.id}', 'isBought', this.checked, 'bool')"
+            >
+            <span>${isBought ? '已標記為已買' : '點一下標記為已買'}</span>
+          </label>
+        ` : `<div></div>`;
+
+        // ✅ 縮圖：有 image 才顯示
+        const thumbHtml = order.image ? `<img class="thumb" src="${order.image}" alt="商品照片">` : '';
+
         div.innerHTML = `
           <div class="order-title-row">
-            <input
-              class="order-name-input"
-              value="${order.name || ''}"
-              placeholder="商品名稱"
-              oninput="updateOrderField('${order.id}', 'name', this.value, 'string')"
-            />
+            <div class="title-left">
+              ${thumbHtml}
+              <input
+                class="order-name-input"
+                value="${order.name || ''}"
+                placeholder="商品名稱"
+                oninput="updateOrderField('${order.id}', 'name', this.value, 'string')"
+              />
+            </div>
+
             <div class="order-type-badges">
               <span class="badge ${typeBadgeClass}">${typeLabel}</span>
+              ${boughtBadgeHtml}
               <span class="badge badge--country">${order.country || '-'}</span>
             </div>
           </div>
@@ -453,12 +522,7 @@
               ? `
                 <div class="field">
                   <span class="field-label">第二成本</span>
-                  <input
-                    class="field-input"
-                    type="text"
-                    value="${cost2Text}"
-                    readonly
-                  />
+                  <input class="field-input" type="text" value="${cost2Text}" readonly />
                 </div>
               `
               : ''
@@ -468,6 +532,8 @@
           </div>
 
           <div class="order-actions">
+            ${boughtToggleHtml}
+
             <button class="order-action-btn order-action-btn--danger" onclick="deleteOrder('${order.id}')">
               🗑 <span>刪除</span>
             </button>
@@ -478,7 +544,6 @@
       });
     }
 
-    // 初始化
     renderList();
   </script>
 </body>
