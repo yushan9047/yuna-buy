@@ -210,9 +210,20 @@
 
       <div style="display:flex; gap:12px;">
         <div class="form-group" style="flex:1">
-          <label>🔢 數量</label>
-          <input type="number" id="preQty" value="1">
-        </div>
+            <label>🔢 數量</label>
+            <select id="preQty">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+            </select>
+          </div>
         <div class="form-group" style="flex:1">
           <label>💰 售價 (NT$)</label>
           <input type="number" id="preSellPrice" placeholder="0">
@@ -504,17 +515,17 @@
           </span>
         </div>
 
-        <div class="order-fields">
-          <div class="field">
-            <span class="field-label">數量</span>
-            <input
-              class="field-input"
-              type="number"
-              min="1"
-              value="${order.qty != null ? order.qty : 1}"
-              oninput="updateOrderField('${order.id}', 'qty', this.value, 'int')"
-            />
-          </div>
+        <div class="field">
+          <span class="field-label">數量</span>
+          <select
+            class="field-select"
+            onchange="updateOrderField('${order.id}', 'qty', this.value, 'int')"
+          >
+            ${[1,2,3,4,5,6,7,8,9,10].map(n => `
+              <option value="${n}" ${order.qty == n ? 'selected' : ''}>${n}</option>
+            `).join('')}
+          </select>
+        </div>
 
           <div class="field">
             <span class="field-label">顧客</span>
