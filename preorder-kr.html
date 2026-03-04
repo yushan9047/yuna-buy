@@ -397,6 +397,11 @@
 
     /* ========= 下方列表：渲染 ========= */
 
+
+    function toggleDetail(id) {
+      const el = document.getElementById('detail-' + id);
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
   function renderKRPreorders() {
   
     const container = document.getElementById('krPreorderList');
