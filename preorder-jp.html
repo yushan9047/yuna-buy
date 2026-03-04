@@ -131,14 +131,14 @@
 
   <script>
     const STORAGE_KEY = "yunaOrders";
-
+  
     /* ---------- Storage ---------- */
     function loadOrders() {
       try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
       catch(e){ console.error("loadOrders failed:", e); return []; }
     }
     function saveOrders(list){ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
-
+  
     function deleteOrder(id) {
       const ok = confirm("確定要刪除這筆資料嗎？");
       if (!ok) return;
@@ -146,7 +146,7 @@
       saveOrders(list);
       renderJPPreorders();
     }
-
+  
     /* ---------- base64 image ---------- */
     function readImageAsBase64(file) {
       return new Promise((resolve, reject) => {
@@ -156,7 +156,7 @@
         reader.readAsDataURL(file);
       });
     }
-
+  
     /* ---------- Top form controls (JP) ---------- */
     function togglePreTax(hasTaxFree) {
       const yesBtn = document.getElementById("taxBtnYes");
@@ -164,7 +164,7 @@
       const taxRateGroup = document.getElementById("taxRateGroup");
       const taxFreeGroup = document.getElementById("preTaxFreeGroup");
       const isTaxFreeInput = document.getElementById("preIsTaxFree");
-
+  
       if (hasTaxFree) {
         isTaxFreeInput.value = "true";
         yesBtn.classList.add("active");
@@ -181,14 +181,14 @@
         document.getElementById("preTaxFreePrice").value = "";
       }
     }
-
+  
     function setPreBuyer(name, btnEl) {
       document.getElementById("preBuyer").value = name;
-
+  
       const group = document.getElementById("preBuyerGroup");
       group.querySelectorAll(".btn-opt").forEach(b => b.classList.remove("active"));
       btnEl.classList.add("active");
-
+  
       const rayBox = document.getElementById("preRayCardOptions");
       if (name === "Ray") {
         rayBox.style.display = "block";
@@ -198,14 +198,14 @@
         rayBox.querySelectorAll(".btn-opt").forEach(b => b.classList.remove("active"));
       }
     }
-
+  
     function setPreRayCard(cardName, btnEl) {
       document.getElementById("preRayCard").value = cardName;
       const rayBox = document.getElementById("preRayCardOptions");
       rayBox.querySelectorAll(".btn-opt").forEach(b => b.classList.remove("active"));
       btnEl.classList.add("active");
     }
-
+  
     /* ---------- Save JP preorder ---------- */
     async function savePreOrder() {
       const fileInput = document.getElementById("preImg");
@@ -213,25 +213,25 @@
       if (fileInput?.files?.length) {
         imageBase64 = await readImageAsBase64(fileInput.files[0]);
       }
-
+  
       const name = document.getElementById("preName").value.trim();
       const customer = document.getElementById("preCust").value.trim();
       const buyer = document.getElementById("preBuyer").value;
       const rayCard = document.getElementById("preRayCard").value;
       const loc = document.getElementById("preLoc").value.trim();
-
+  
       const isTaxFree = document.getElementById("preIsTaxFree").value === "true";
       const taxPrice = Number(document.getElementById("preTaxPrice").value || 0);
       const taxRate = Number(document.getElementById("preTaxRate").value || 0);
       const taxFreePrice = Number(document.getElementById("preTaxFreePrice").value || 0);
-
+  
       const qty = parseInt(document.getElementById("preQty").value || "1", 10);
       const sellPrice = Number(document.getElementById("preSellPrice").value || 0);
-
+  
       if (!name) return alert("請輸入商品名稱");
       if (!taxPrice) return alert("請輸入含稅價");
       if (!buyer) return alert("請選擇負責買手");
-
+  
       const order = {
         id: "O-" + Date.now().toString(36),
         type: "preorder",
@@ -247,19 +247,20 @@
         isBought: false,
         image: imageBase64,
         extra: {
-          isTaxFree,
-          taxRate,
-          taxFreePrice,
+          // ✅ 這裡保持你的資料結構
+          isTaxFree: isTaxFree,
+          taxRate: isTaxFree ? taxRate : "",
+          taxFreePrice: isTaxFree ? taxFreePrice : "",
           rayCard: buyer === "Ray" ? rayCard : ""
         }
       };
-
+  
       const list = loadOrders();
       list.push(order);
       saveOrders(list);
-
+  
       renderJPPreorders();
-
+  
       // reset
       document.getElementById("preImg").value = "";
       document.getElementById("preName").value = "";
@@ -269,21 +270,21 @@
       document.getElementById("preQty").value = "1";
       document.getElementById("preSellPrice").value = "";
       togglePreTax(false);
-
+  
       document.getElementById("preBuyer").value = "";
       document.querySelectorAll("#preBuyerGroup .btn-opt").forEach(b => b.classList.remove("active"));
       document.getElementById("preRayCardOptions").style.display = "none";
       document.getElementById("preRayCard").value = "";
-
+  
       alert("已儲存");
     }
-
+  
     /* ---------- Inline update ---------- */
     function updateOrderField(id, field, rawValue, valueType = "string") {
       const list = loadOrders();
       const idx = list.findIndex(o => o.id === id);
       if (idx === -1) return;
-
+  
       let v = rawValue;
       if (valueType === "number") {
         v = rawValue === "" ? null : Number(rawValue);
@@ -296,45 +297,87 @@
       } else {
         v = String(rawValue ?? "").trim();
       }
-
+  
       list[idx][field] = v;
       saveOrders(list);
     }
-
+  
+    // ✅ 改：isTaxFree 切換時，動態控制稅率/退稅價顯示
     function updateOrderExtraField(id, key, rawValue) {
       const list = loadOrders();
       const idx = list.findIndex(o => o.id === id);
       if (idx === -1) return;
-
+  
       if (!list[idx].extra) list[idx].extra = {};
+  
+      if (key === "isTaxFree") {
+        // select 值會是 "true"/"false"
+        const boolVal = String(rawValue) === "true";
+        list[idx].extra.isTaxFree = boolVal;
+  
+        // 若切到「無退稅」：順手清空稅率/退稅價（避免殘留）
+        if (!boolVal) {
+          list[idx].extra.taxRate = "";
+          list[idx].extra.taxFreePrice = "";
+        }
+        saveOrders(list);
+  
+        // 不用整頁重繪，只切換顯示
+        setJPRefundVisibility(id);
+        return;
+      }
+  
       list[idx].extra[key] = String(rawValue ?? "").trim();
       saveOrders(list);
     }
-
+  
     function toggleBought(id, checked) {
       updateOrderField(id, "isBought", checked, "bool");
       renderJPPreorders();
     }
-
+  
     async function updateOrderImage(id, fileInputEl) {
       if (!fileInputEl.files || fileInputEl.files.length === 0) return;
       const img = await readImageAsBase64(fileInputEl.files[0]);
-
+  
       const list = loadOrders();
       const idx = list.findIndex(o => o.id === id);
       if (idx === -1) return;
-
+  
       list[idx].image = img;
       saveOrders(list);
       renderJPPreorders();
     }
-
+  
     function toggleDetail(id) {
       const el = document.getElementById("detail-" + id);
       if (!el) return;
       el.style.display = el.style.display === "none" ? "block" : "none";
     }
-
+  
+    // ✅ 新增：控制「稅率、退稅價」顯示
+    function setJPRefundVisibility(orderId) {
+      const list = loadOrders();
+      const order = list.find(o => o.id === orderId);
+      const isTaxFree = !!(order && order.extra && (order.extra.isTaxFree === true || String(order.extra.isTaxFree) === "true"));
+  
+      const box = document.getElementById("jp-refund-extra-" + orderId);
+      if (!box) return;
+      box.style.display = isTaxFree ? "grid" : "none";
+  
+      // 同步下拉選單（避免 UI 與資料不同步）
+      const sel = document.getElementById("jp-isTaxFree-" + orderId);
+      if (sel) sel.value = isTaxFree ? "true" : "false";
+  
+      // 如果關掉，順便把 input 清空（UI層）
+      if (!isTaxFree) {
+        const rate = document.getElementById("jp-taxRate-" + orderId);
+        const price = document.getElementById("jp-taxFreePrice-" + orderId);
+        if (rate) rate.value = "";
+        if (price) price.value = "";
+      }
+    }
+  
     /* ---------- Render helpers ---------- */
     function safeText(s) {
       return String(s ?? "")
@@ -344,33 +387,33 @@
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
     }
-
-    /* ---------- Render list (改成跟韓國同款呈現) ---------- */
+  
+    /* ---------- Render list ---------- */
     function renderJPPreorders() {
       const container = document.getElementById("preOrderList");
       const emptyState = document.getElementById("jpEmptyState");
       if (!container) return;
-
+  
       container.innerHTML = "";
-
+  
       const list = loadOrders()
         .filter(o => o.type === "preorder" && o.country === "JP")
         .sort((a, b) => (a.id < b.id ? 1 : -1));
-
+  
       if (list.length === 0) {
         if (emptyState) emptyState.style.display = "block";
         return;
       } else {
         if (emptyState) emptyState.style.display = "none";
       }
-
+  
       const grouped = {};
       for (const o of list) {
         const key = o.customer ? o.customer.trim() : "未填顧客";
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(o);
       }
-
+  
       Object.keys(grouped).forEach(customerName => {
         const groupWrap = document.createElement("div");
         groupWrap.style.border = "1px solid var(--soft-border)";
@@ -378,7 +421,7 @@
         groupWrap.style.background = "#fff";
         groupWrap.style.boxShadow = "var(--shadow-soft)";
         groupWrap.style.overflow = "hidden";
-
+  
         const header = document.createElement("div");
         header.style.display = "flex";
         header.style.alignItems = "center";
@@ -390,23 +433,27 @@
           <div style="font-weight:800; font-size:1.05rem;">${safeText(customerName)}</div>
         `;
         groupWrap.appendChild(header);
-
+  
         grouped[customerName].forEach((order, i) => {
           const isBought = !!order.isBought;
           const rayCard = order.extra && order.extra.rayCard ? order.extra.rayCard : "";
-
+  
+          const isTaxFree = !!(order.extra && (order.extra.isTaxFree === true || String(order.extra.isTaxFree) === "true"));
+          const taxRateVal = order.extra && order.extra.taxRate != null ? order.extra.taxRate : "";
+          const taxFreePriceVal = order.extra && order.extra.taxFreePrice != null ? order.extra.taxFreePrice : "";
+  
           const row = document.createElement("div");
           row.style.padding = "14px 16px";
           row.style.borderBottom = i === grouped[customerName].length - 1 ? "none" : "1px solid var(--soft-border)";
           row.style.background = isBought ? "#ecfdf3" : "#ffffff";
-
+  
           row.innerHTML = `
             <!-- 摘要列 -->
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
               <div style="display:flex; gap:12px; align-items:center; min-width:0;">
                 ${order.image ? `<img src="${order.image}" alt="img"
                   style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex:0 0 auto;">` : ""}
-
+  
                 <div style="min-width:0;">
                   <div style="font-size:1.25rem; font-weight:800; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                     ${safeText(order.name)}
@@ -416,19 +463,19 @@
                   </div>
                 </div>
               </div>
-
+  
               <div style="display:flex; align-items:center; gap:10px; flex:0 0 auto;">
                 <label style="display:flex; align-items:center; gap:6px; font-size:0.95rem; color:${isBought ? "#16a34a" : "var(--text-sub)"};">
                   <input type="checkbox" ${isBought ? "checked" : ""} onchange="toggleBought('${order.id}', this.checked)">
                   ${isBought ? "已買" : "未買"}
                 </label>
-
+  
                 <button type="button"
                   onclick="toggleDetail('${order.id}')"
                   style="border:1px solid var(--soft-border); background:#fff; border-radius:8px; padding:6px 8px; cursor:pointer;">
                   ✏
                 </button>
-
+  
                 <button type="button"
                   onclick="deleteOrder('${order.id}')"
                   style="border:1px solid var(--soft-border); background:#fff; border-radius:8px; padding:6px 8px; cursor:pointer; color:#ef4444;">
@@ -436,11 +483,11 @@
                 </button>
               </div>
             </div>
-
-            <!-- 展開詳細（JP 欄位保持原本） -->
+  
+            <!-- 展開詳細 -->
             <div id="detail-${order.id}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--soft-border);">
-
               <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px;">
+  
                 <div style="grid-column:1 / -1;">
                   <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">商品照片</div>
                   <div style="display:flex; align-items:center; gap:10px;">
@@ -449,19 +496,19 @@
                     <input type="file" accept="image/*" onchange="updateOrderImage('${order.id}', this)">
                   </div>
                 </div>
-
+  
                 <div>
                   <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">商品名</div>
                   <input class="field-input" type="text" value="${safeText(order.name)}"
                     oninput="updateOrderField('${order.id}','name',this.value,'string')">
                 </div>
-
+  
                 <div>
                   <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">顧客</div>
                   <input class="field-input" type="text" value="${safeText(order.customer || '')}"
                     oninput="updateOrderField('${order.id}','customer',this.value,'string')">
                 </div>
-
+  
                 <div>
                   <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">買手</div>
                   <select class="field-select"
@@ -472,7 +519,7 @@
                     <option value="Cupid" ${order.buyer === "Cupid" ? "selected" : ""}>Cupid</option>
                   </select>
                 </div>
-
+  
                 <div>
                   <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">數量</div>
                   <select class="field-select"
@@ -482,19 +529,19 @@
                     `).join("")}
                   </select>
                 </div>
-
+  
                 <div>
                   <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">成本 (¥)</div>
                   <input class="field-input" type="number" value="${safeText(order.cost ?? '')}"
                     oninput="updateOrderField('${order.id}','cost',this.value,'number')">
                 </div>
-
+  
                 <div>
                   <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">售價 (NT$)</div>
                   <input class="field-input" type="number" value="${safeText(order.sellPrice ?? '')}"
                     oninput="updateOrderField('${order.id}','sellPrice',this.value,'number')">
                 </div>
-
+  
                 <div style="${order.buyer === "Ray" ? "" : "display:none;"}">
                   <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">Ray 信用卡</div>
                   <select class="field-select"
@@ -505,53 +552,61 @@
                     <option value="qp卡"   ${rayCard === "qp卡"   ? "selected" : ""}>qp卡</option>
                   </select>
                 </div>
-
+  
                 <div>
                   <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">地點</div>
                   <input class="field-input" type="text" value="${safeText(order.loc || '')}"
                     oninput="updateOrderField('${order.id}','loc',this.value,'string')">
                 </div>
-
+  
+                <!-- ✅ 退稅：只在「有退稅」才顯示稅率/退稅價 -->
                 <div style="grid-column:1 / -1;">
                   <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">退稅資訊（可選）</div>
+  
                   <div style="display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px;">
                     <div>
                       <div style="font-size:0.72rem; color:var(--text-sub); margin-bottom:6px;">是否退稅</div>
-                      <select class="field-select"
+                      <select id="jp-isTaxFree-${order.id}" class="field-select"
                         onchange="updateOrderExtraField('${order.id}','isTaxFree',this.value)">
-                        <option value="false" ${(order.extra && String(order.extra.isTaxFree)==="false") ? "selected":""}>無</option>
-                        <option value="true"  ${(order.extra && String(order.extra.isTaxFree)==="true") ? "selected":""}>有</option>
+                        <option value="false" ${!isTaxFree ? "selected":""}>無</option>
+                        <option value="true"  ${isTaxFree ? "selected":""}>有</option>
                       </select>
                     </div>
-                    <div>
-                      <div style="font-size:0.72rem; color:var(--text-sub); margin-bottom:6px;">稅率</div>
-                      <input class="field-input" type="number"
-                        value="${safeText(order.extra && order.extra.taxRate!=null ? order.extra.taxRate : '')}"
-                        oninput="updateOrderExtraField('${order.id}','taxRate',this.value)">
-                    </div>
-                    <div>
-                      <div style="font-size:0.72rem; color:var(--text-sub); margin-bottom:6px;">退稅價</div>
-                      <input class="field-input" type="number"
-                        value="${safeText(order.extra && order.extra.taxFreePrice!=null ? order.extra.taxFreePrice : '')}"
-                        oninput="updateOrderExtraField('${order.id}','taxFreePrice',this.value)">
+  
+                    <!-- ✅ 這兩格用容器包起來，只有有退稅才顯示 -->
+                    <div id="jp-refund-extra-${order.id}" style="display:${isTaxFree ? "grid" : "none"}; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; grid-column:2 / 4;">
+                      <div>
+                        <div style="font-size:0.72rem; color:var(--text-sub); margin-bottom:6px;">稅率</div>
+                        <input id="jp-taxRate-${order.id}" class="field-input" type="number"
+                          value="${safeText(taxRateVal)}"
+                          oninput="updateOrderExtraField('${order.id}','taxRate',this.value)">
+                      </div>
+  
+                      <div>
+                        <div style="font-size:0.72rem; color:var(--text-sub); margin-bottom:6px;">退稅價</div>
+                        <input id="jp-taxFreePrice-${order.id}" class="field-input" type="number"
+                          value="${safeText(taxFreePriceVal)}"
+                          oninput="updateOrderExtraField('${order.id}','taxFreePrice',this.value)">
+                      </div>
                     </div>
                   </div>
                 </div>
+  
               </div>
-
+  
               <div style="margin-top:10px; font-size:0.78rem; color:var(--text-sub);">
                 ※ 修改會即時儲存（不用另外按儲存）
               </div>
             </div>
           `;
-
+  
           groupWrap.appendChild(row);
         });
-
+  
         container.appendChild(groupWrap);
       });
     }
-
+  
     renderJPPreorders();
   </script>
 </body>
