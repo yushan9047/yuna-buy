@@ -115,122 +115,136 @@
   <!-- ✅ 新增：共用 api.js -->
   <script src="api.js"></script>
 
-<script>
-  // 進頁先確保有 PIN
-  (function initPin() {
-    if (!window.YunaAPI.ensurePin()) return;
-  })();
+<script type="module">
 
-  function toggleBuyTax(hasTaxFree) {
-    const yesBtn = document.getElementById('buyTaxBtnYes');
-    const noBtn = document.getElementById('buyTaxBtnNo');
-    const taxRateGroup = document.getElementById('buyTaxRateGroup');
-    const taxFreeGroup = document.getElementById('buyTaxFreeGroup');
-    const isTaxFreeInput = document.getElementById('buyIsTaxFree');
+import { supabase } from "./supabase-client.js";
 
-    if (hasTaxFree) {
-      isTaxFreeInput.value = 'true';
-      yesBtn.classList.add('active');
-      noBtn.classList.remove('active');
-      taxRateGroup.style.display = 'block';
-      taxFreeGroup.style.display = 'block';
-    } else {
-      isTaxFreeInput.value = 'false';
-      yesBtn.classList.remove('active');
-      noBtn.classList.add('active');
-      taxRateGroup.style.display = 'none';
-      taxFreeGroup.style.display = 'none';
-      document.getElementById('buyTaxRate').value = 10;
-      document.getElementById('buyTaxFreePrice').value = '';
-    }
+// PIN 檢查
+const PIN = "1234";
+
+function checkPin() {
+  const saved = localStorage.getItem("yuna_pin_ok");
+  if (saved === "1") return;
+
+  const input = prompt("請輸入 4 碼 PIN");
+  if (input === PIN) {
+    localStorage.setItem("yuna_pin_ok", "1");
+  } else {
+    alert("PIN 錯誤");
+    location.href = "index.html";
   }
+}
 
-  function setBuyer(name, btnEl) {
-    const buyerInput = document.getElementById('pBuyer');
-    buyerInput.value = name;
+checkPin();
 
-    const group = document.getElementById('buyBuyerGroup');
-    const buttons = group.querySelectorAll('.btn-opt');
-    buttons.forEach(btn => btn.classList.remove('active'));
-    btnEl.classList.add('active');
+function toggleBuyTax(hasTaxFree) {
+  const yesBtn = document.getElementById('buyTaxBtnYes');
+  const noBtn = document.getElementById('buyTaxBtnNo');
+  const taxRateGroup = document.getElementById('buyTaxRateGroup');
+  const taxFreeGroup = document.getElementById('buyTaxFreeGroup');
+  const isTaxFreeInput = document.getElementById('buyIsTaxFree');
 
-    const rayCardBox = document.getElementById('rayCardOptions');
-    if (name === 'Ray') {
-      rayCardBox.style.display = 'block';
-    } else {
-      rayCardBox.style.display = 'none';
-      document.getElementById('pRayCard').value = '';
-      const rayButtons = rayCardBox.querySelectorAll('.btn-opt');
-      rayButtons.forEach(btn => btn.classList.remove('active'));
-    }
+  if (hasTaxFree) {
+    isTaxFreeInput.value = 'true';
+    yesBtn.classList.add('active');
+    noBtn.classList.remove('active');
+    taxRateGroup.style.display = 'block';
+    taxFreeGroup.style.display = 'block';
+  } else {
+    isTaxFreeInput.value = 'false';
+    yesBtn.classList.remove('active');
+    noBtn.classList.add('active');
+    taxRateGroup.style.display = 'none';
+    taxFreeGroup.style.display = 'none';
+    document.getElementById('buyTaxRate').value = 10;
+    document.getElementById('buyTaxFreePrice').value = '';
   }
+}
 
-  function setRayCard(cardName, btnEl) {
-    const cardInput = document.getElementById('pRayCard');
-    cardInput.value = cardName;
+function setBuyer(name, btnEl) {
+  const buyerInput = document.getElementById('pBuyer');
+  buyerInput.value = name;
 
-    const rayCardBox = document.getElementById('rayCardOptions');
-    const buttons = rayCardBox.querySelectorAll('.btn-opt');
-    buttons.forEach(btn => btn.classList.remove('active'));
-    btnEl.classList.add('active');
+  const group = document.getElementById('buyBuyerGroup');
+  const buttons = group.querySelectorAll('.btn-opt');
+  buttons.forEach(btn => btn.classList.remove('active'));
+
+  btnEl.classList.add('active');
+
+  const rayCardBox = document.getElementById('rayCardOptions');
+
+  if (name === 'Ray') {
+    rayCardBox.style.display = 'block';
+  } else {
+    rayCardBox.style.display = 'none';
+    document.getElementById('pRayCard').value = '';
   }
+}
 
-  async function saveData() {
-    if (!window.YunaAPI.ensurePin()) return;
+function setRayCard(cardName, btnEl) {
+  const cardInput = document.getElementById('pRayCard');
+  cardInput.value = cardName;
 
-    const data = {
-      name: document.getElementById('pName').value.trim(),
-      priceTax: Number(document.getElementById('pPriceTax').value || 0),
-      isTaxFree: document.getElementById('buyIsTaxFree').value === 'true',
-      taxRate: Number(document.getElementById('buyTaxRate').value || 0),
-      taxFreePrice: Number(document.getElementById('buyTaxFreePrice').value || 0),
-      sellPrice: Number(document.getElementById('pPriceSell').value || 0),
-      qty: Number(document.getElementById('pQty').value || 1),
-      loc: document.getElementById('pLoc').value.trim(),
-      customer: document.getElementById('pCustomer').value.trim(),
-      buyer: document.getElementById('pBuyer').value,
-      rayCard: document.getElementById('pRayCard').value
-    };
+  const rayCardBox = document.getElementById('rayCardOptions');
+  const buttons = rayCardBox.querySelectorAll('.btn-opt');
+  buttons.forEach(btn => btn.classList.remove('active'));
 
-    if (!data.name) return alert('請輸入品名');
-    if (!data.priceTax) return alert('請輸入含稅成本');
-    if (!data.buyer) return alert('請選擇負責買手');
+  btnEl.classList.add('active');
+}
 
-    const order = {
-      id: 'O-' + Date.now().toString(36),
-      type: 'onsite',
-      country: 'JP',
-      name: data.name,
-      qty: data.qty,
-      buyer: data.buyer,
-      customer: data.customer,
-      loc: data.loc,
-      currency: 'JPY',
-      cost: data.priceTax,
-      sellPrice: data.sellPrice || null,
+async function saveData() {
+
+  const name = document.getElementById('pName').value.trim();
+  const cost = Number(document.getElementById('pPriceTax').value);
+  const sellPrice = Number(document.getElementById('pPriceSell').value);
+  const qty = Number(document.getElementById('pQty').value);
+  const loc = document.getElementById('pLoc').value;
+  const customer = document.getElementById('pCustomer').value;
+  const buyer = document.getElementById('pBuyer').value;
+
+  const isTaxFree = document.getElementById('buyIsTaxFree').value === 'true';
+  const taxRate = Number(document.getElementById('buyTaxRate').value);
+  const taxFreePrice = Number(document.getElementById('buyTaxFreePrice').value);
+  const rayCard = document.getElementById('pRayCard').value;
+
+  if (!name) return alert("請輸入品名");
+
+  const { data, error } = await supabase
+    .from("orders")
+    .insert({
+      type: "onsite",
+      country: "JP",
+      name,
+      qty,
+      buyer,
+      customer,
+      cost,
+      sell_price: sellPrice,
+      currency: "JPY",
+      loc,
       extra: {
-        isTaxFree: data.isTaxFree,
-        taxRate: data.taxRate,
-        taxFreePrice: data.taxFreePrice,
-        rayCard: data.rayCard
+        isTaxFree,
+        taxRate,
+        taxFreePrice,
+        rayCard
       }
-    };
+    });
 
-    try {
-      // ✅ 寫入 Supabase
-      await window.YunaAPI.saveOrderToServer(order);
-
-      // ✅ 拉回來同步 localStorage（讓其他頁面立刻看到）
-      await window.YunaAPI.syncFromServerToLocal();
-
-      alert('已儲存到採購明細（日本現場採購 / Supabase）');
-
-      // 你要不要清空表單，這裡先不動（你也可要求我做）
-    } catch (e) {
-      console.error(e);
-      alert("儲存失敗：" + (e?.message || "未知錯誤") + "\n\n可能原因：PIN 錯、Edge Function 未實作 orders_save、或 CORS/URL 設定。");
-    }
+  if (error) {
+    alert("儲存失敗：" + error.message);
+    console.error(error);
+  } else {
+    alert("已成功存入 Supabase！");
+    location.reload();
   }
+}
+
+window.toggleBuyTax = toggleBuyTax;
+window.setBuyer = setBuyer;
+window.setRayCard = setRayCard;
+window.saveData = saveData;
+
 </script>
+<script type="module" src="supabase-client.js"></script>
 </body>
 </html>
