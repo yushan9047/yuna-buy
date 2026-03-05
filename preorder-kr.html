@@ -9,8 +9,6 @@
   <style>
     .order-list { display:flex; flex-direction:column; gap:10px; }
     .empty-state { margin-top:6px; font-size:0.8rem; color:var(--text-sub); text-align:center; }
-
-    /* 展開區輸入框沿用你的 field-input / field-select */
     .field-input, .field-select{
       width:100%;
       font-size:0.78rem;
@@ -35,10 +33,7 @@
   </div>
 
   <main class="page-body">
-
-    <!-- 上方：新增表單 -->
     <div class="card">
-
       <div class="form-group">
         <label>📷 商品照片</label>
         <input type="file" id="pImg" accept="image/*">
@@ -96,12 +91,9 @@
         <input type="hidden" id="pBuyer">
       </div>
 
-      <button class="submit-btn" type="button" onclick="saveData()">
-        🚀 確認儲存
-      </button>
+      <button class="submit-btn" type="button" onclick="saveData()">🚀 確認儲存</button>
     </div>
 
-    <!-- 下方：清單 -->
     <div class="card" style="margin-top:14px;">
       <div class="form-group" style="margin-bottom:8px;">
         <label>🧾 這趟韓國預購清單</label>
@@ -111,363 +103,331 @@
         目前尚未新增任何韓國預購商品。
       </div>
     </div>
-
   </main>
 
-  <script>
-    const STORAGE_KEY = "yunaOrders";
+<script type="module">
+import { ensurePinOrRedirect } from "./pin.js";
+import { listOrders, createOrder, updateOrder, deleteOrder, readImageAsBase64 } from "./orders-api.js";
+ensurePinOrRedirect();
 
-    /* ---------- Storage ---------- */
-    function loadOrders() {
-      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
-      catch(e){ console.error("loadOrders failed:", e); return []; }
-    }
-    function saveOrders(list){ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+function currencySymbol(currency) {
+  if (currency === "USD") return "US$";
+  if (currency === "KRW") return "₩";
+  return currency || "";
+}
 
-    function deleteOrder(id) {
-      const ok = confirm("確定要刪除這筆資料嗎？");
-      if (!ok) return;
-      const list = loadOrders().filter(o => o.id !== id);
-      saveOrders(list);
-      renderKRPreorders();
-    }
+function safeText(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
-    /* ---------- base64 image ---------- */
-    function readImageAsBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
+function setCurrency(type, btnEl) {
+  document.getElementById("pCurrency").value = type;
 
-    /* ---------- Form controls ---------- */
-    function setCurrency(type, btnEl) {
-      document.getElementById("pCurrency").value = type;
+  const group = btnEl.parentElement;
+  group.querySelectorAll(".btn-opt").forEach(b => b.classList.remove("active"));
+  btnEl.classList.add("active");
 
-      const group = btnEl.parentElement;
-      group.querySelectorAll(".btn-opt").forEach(b => b.classList.remove("active"));
-      btnEl.classList.add("active");
+  const krw = document.getElementById("priceKRWGroup");
+  const usd = document.getElementById("priceUSDGroup");
 
-      const krw = document.getElementById("priceKRWGroup");
-      const usd = document.getElementById("priceUSDGroup");
+  if (type === "KRW") {
+    krw.style.display = "block";
+    usd.style.display = "none";
+    document.getElementById("pPriceUSD").value = "";
+  } else {
+    krw.style.display = "none";
+    usd.style.display = "block";
+    document.getElementById("pPriceKRW").value = "";
+  }
+}
 
-      if (type === "KRW") {
-        krw.style.display = "block";
-        usd.style.display = "none";
-        document.getElementById("pPriceUSD").value = "";
-      } else {
-        krw.style.display = "none";
-        usd.style.display = "block";
-        document.getElementById("pPriceKRW").value = "";
-      }
-    }
+function setBuyer(name, btnEl) {
+  document.getElementById("pBuyer").value = name;
+  const group = document.getElementById("buyerGroup");
+  group.querySelectorAll(".btn-opt").forEach(b => b.classList.remove("active"));
+  btnEl.classList.add("active");
+}
 
-    function setBuyer(name, btnEl) {
-      document.getElementById("pBuyer").value = name;
-      const group = document.getElementById("buyerGroup");
-      group.querySelectorAll(".btn-opt").forEach(b => b.classList.remove("active"));
-      btnEl.classList.add("active");
-    }
-
-    /* ---------- Save ---------- */
-    async function saveData() {
-      const fileInput = document.getElementById("pImg");
-      let imageBase64 = null;
-      if (fileInput?.files?.length) {
-        imageBase64 = await readImageAsBase64(fileInput.files[0]);
-      }
-
-      const currency = document.getElementById("pCurrency").value;
-      const name = document.getElementById("pName").value.trim();
-      const customer = document.getElementById("pCustomer").value.trim();
-      const buyer = document.getElementById("pBuyer").value;
-      const qty = parseInt(document.getElementById("pQty").value || "1", 10);
-      const sellPrice = Number(document.getElementById("pPriceSell").value || 0);
-      const priceKRW = Number(document.getElementById("pPriceKRW").value || 0);
-      const priceUSD = Number(document.getElementById("pPriceUSD").value || 0);
-
-      if (!name) return alert("請輸入商品名稱");
-      if (!buyer) return alert("請選擇負責人");
-      if (currency === "KRW" && !priceKRW) return alert("請輸入韓幣購入價格");
-      if (currency === "USD" && !priceUSD) return alert("請輸入美金購入價格");
-
-      const cost = currency === "KRW" ? priceKRW : priceUSD;
-
-      const order = {
-        id: "O-" + Date.now().toString(36),
-        type: "preorder",
-        country: "KR",
-        name,
-        qty: Number.isFinite(qty) && qty > 0 ? qty : 1,
-        customer,
-        buyer,
-        currency,
-        cost,
-        sellPrice: sellPrice || null,
-        isBought: false,
-        image: imageBase64
-      };
-
-      const list = loadOrders();
-      list.push(order);
-      saveOrders(list);
-
-      renderKRPreorders();
-
-      // reset（不重置幣別按鈕，避免一直點）
-      document.getElementById("pName").value = "";
-      document.getElementById("pCustomer").value = "";
-      document.getElementById("pQty").value = "1";
-      document.getElementById("pPriceSell").value = "";
-      document.getElementById("pImg").value = "";
-      if (currency === "KRW") document.getElementById("pPriceKRW").value = "";
-      if (currency === "USD") document.getElementById("pPriceUSD").value = "";
-
-      document.getElementById("pBuyer").value = "";
-      document.querySelectorAll("#buyerGroup .btn-opt").forEach(b => b.classList.remove("active"));
-
-      alert("已儲存");
+async function saveData() {
+  try {
+    const fileInput = document.getElementById("pImg");
+    let imageBase64 = null;
+    if (fileInput?.files?.length) {
+      imageBase64 = await readImageAsBase64(fileInput.files[0]);
     }
 
-    /* ---------- Inline update ---------- */
-    function updateOrderField(id, field, rawValue, valueType = "string") {
-      const list = loadOrders();
-      const idx = list.findIndex(o => o.id === id);
-      if (idx === -1) return;
+    const currency = document.getElementById("pCurrency").value;
+    const name = document.getElementById("pName").value.trim();
+    const customer = document.getElementById("pCustomer").value.trim();
+    const buyer = document.getElementById("pBuyer").value;
+    const qty = parseInt(document.getElementById("pQty").value || "1", 10);
+    const sellPrice = Number(document.getElementById("pPriceSell").value || 0);
+    const priceKRW = Number(document.getElementById("pPriceKRW").value || 0);
+    const priceUSD = Number(document.getElementById("pPriceUSD").value || 0);
 
-      let v = rawValue;
-      if (valueType === "number") {
-        v = rawValue === "" ? null : Number(rawValue);
-        if (Number.isNaN(v)) v = null;
-      } else if (valueType === "int") {
-        v = rawValue === "" ? null : parseInt(rawValue, 10);
-        if (Number.isNaN(v)) v = null;
-      } else if (valueType === "bool") {
-        v = !!rawValue;
-      } else {
-        v = String(rawValue ?? "").trim();
-      }
+    if (!name) return alert("請輸入商品名稱");
+    if (!buyer) return alert("請選擇負責人");
+    if (currency === "KRW" && !priceKRW) return alert("請輸入韓幣購入價格");
+    if (currency === "USD" && !priceUSD) return alert("請輸入美金購入價格");
 
-      list[idx][field] = v;
-      saveOrders(list);
-    }
+    const cost = currency === "KRW" ? priceKRW : priceUSD;
 
-    function toggleBought(id, checked) {
-      updateOrderField(id, "isBought", checked, "bool");
-      renderKRPreorders();
-    }
-
-    async function updateOrderImage(id, fileInputEl) {
-      if (!fileInputEl.files || fileInputEl.files.length === 0) return;
-      const img = await readImageAsBase64(fileInputEl.files[0]);
-
-      const list = loadOrders();
-      const idx = list.findIndex(o => o.id === id);
-      if (idx === -1) return;
-
-      list[idx].image = img;
-      saveOrders(list);
-      renderKRPreorders();
-    }
-
-    function toggleDetail(id) {
-      const el = document.getElementById("detail-" + id);
-      if (!el) return;
-      el.style.display = el.style.display === "none" ? "block" : "none";
-    }
-
-    /* ---------- Render helpers ---------- */
-    function currencySymbol(currency) {
-      if (currency === "USD") return "US$";
-      if (currency === "KRW") return "₩";
-      return currency || "";
-    }
-
-    function safeText(s) {
-      return String(s ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    /* ---------- Render list (screenshot style) ---------- */
-    function renderKRPreorders() {
-      const container = document.getElementById("krPreorderList");
-      const emptyState = document.getElementById("krEmptyState");
-      if (!container) return;
-
-      container.innerHTML = "";
-
-      const list = loadOrders()
-        .filter(o => o.type === "preorder" && o.country === "KR")
-        .sort((a, b) => (a.id < b.id ? 1 : -1));
-
-      if (list.length === 0) {
-        if (emptyState) emptyState.style.display = "block";
-        return;
-      } else {
-        if (emptyState) emptyState.style.display = "none";
-      }
-
-      const grouped = {};
-      for (const o of list) {
-        const key = o.customer ? o.customer.trim() : "未填顧客";
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(o);
-      }
-
-      Object.keys(grouped).forEach(customerName => {
-        const groupWrap = document.createElement("div");
-        groupWrap.style.border = "1px solid var(--soft-border)";
-        groupWrap.style.borderRadius = "18px";
-        groupWrap.style.background = "#fff";
-        groupWrap.style.boxShadow = "var(--shadow-soft)";
-        groupWrap.style.overflow = "hidden";
-
-        const header = document.createElement("div");
-        header.style.display = "flex";
-        header.style.alignItems = "center";
-        header.style.gap = "10px";
-        header.style.padding = "14px 16px";
-        header.style.borderBottom = "1px solid var(--soft-border)";
-        header.innerHTML = `
-          <div style="font-size:22px; line-height:1;">👤</div>
-          <div style="font-weight:800; font-size:1.05rem;">${safeText(customerName)}</div>
-        `;
-        groupWrap.appendChild(header);
-
-        grouped[customerName].forEach((order, i) => {
-          const isBought = !!order.isBought;
-          const sym = currencySymbol(order.currency);
-
-          const row = document.createElement("div");
-          row.style.padding = "14px 16px";
-          row.style.borderBottom = i === grouped[customerName].length - 1 ? "none" : "1px solid var(--soft-border)";
-          row.style.background = isBought ? "#ecfdf3" : "#ffffff";
-
-          row.innerHTML = `
-            <!-- 摘要列 -->
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-              <div style="display:flex; gap:12px; align-items:center; min-width:0;">
-                ${order.image ? `<img src="${order.image}" alt="img"
-                  style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex:0 0 auto;">` : ""}
-
-                <div style="min-width:0;">
-                  <div style="font-size:1.25rem; font-weight:800; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    ${safeText(order.name)}
-                  </div>
-                  <div style="margin-top:4px; color:var(--text-sub); font-size:0.9rem;">
-                    成本 ${safeText(order.cost ?? 0)} ${safeText(sym)} ｜ 售價 ${safeText(order.sellPrice ?? 0)} NT$
-                  </div>
-                </div>
-              </div>
-
-              <div style="display:flex; align-items:center; gap:10px; flex:0 0 auto;">
-                <label style="display:flex; align-items:center; gap:6px; font-size:0.95rem; color:${isBought ? "#16a34a" : "var(--text-sub)"};">
-                  <input type="checkbox" ${isBought ? "checked" : ""} onchange="toggleBought('${order.id}', this.checked)">
-                  ${isBought ? "已買" : "未買"}
-                </label>
-
-                <button type="button"
-                  onclick="toggleDetail('${order.id}')"
-                  style="border:1px solid var(--soft-border); background:#fff; border-radius:8px; padding:6px 8px; cursor:pointer;">
-                  ✏
-                </button>
-
-                <button type="button"
-                  onclick="deleteOrder('${order.id}')"
-                  style="border:1px solid var(--soft-border); background:#fff; border-radius:8px; padding:6px 8px; cursor:pointer; color:#ef4444;">
-                  🗑
-                </button>
-              </div>
-            </div>
-
-            <!-- 展開詳細 -->
-            <div id="detail-${order.id}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--soft-border);">
-              <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px;">
-
-                <div style="grid-column: 1 / -1;">
-                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">商品照片</div>
-                  <div style="display:flex; align-items:center; gap:10px;">
-                    ${order.image ? `<img src="${order.image}" alt="img"
-                      style="width:56px;height:56px;border-radius:12px;object-fit:cover;border:1px solid var(--soft-border);">` : ""}
-                    <input type="file" accept="image/*" onchange="updateOrderImage('${order.id}', this)">
-                  </div>
-                </div>
-
-                <div>
-                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">商品名</div>
-                  <input class="field-input" type="text" value="${safeText(order.name)}"
-                    oninput="updateOrderField('${order.id}','name',this.value,'string')">
-                </div>
-
-                <div>
-                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">顧客</div>
-                  <input class="field-input" type="text" value="${safeText(order.customer || '')}"
-                    oninput="updateOrderField('${order.id}','customer',this.value,'string')">
-                </div>
-
-                <div>
-                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">買手</div>
-                  <select class="field-select"
-                    onchange="updateOrderField('${order.id}','buyer',this.value,'string')">
-                    <option value="">未指定</option>
-                    <option value="Nana"  ${order.buyer === "Nana" ? "selected" : ""}>Nana</option>
-                    <option value="Cupid" ${order.buyer === "Cupid" ? "selected" : ""}>Cupid</option>
-                  </select>
-                </div>
-
-                <div>
-                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">數量</div>
-                  <select class="field-select"
-                    onchange="updateOrderField('${order.id}','qty',this.value,'int')">
-                    ${Array.from({length:10}, (_,k)=>k+1).map(n=>`
-                      <option value="${n}" ${Number(order.qty||1)===n ? "selected":""}>${n}</option>
-                    `).join("")}
-                  </select>
-                </div>
-
-                <div>
-                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">幣別</div>
-                  <select class="field-select"
-                    onchange="updateOrderField('${order.id}','currency',this.value,'string'); renderKRPreorders();">
-                    <option value="KRW" ${order.currency === "KRW" ? "selected" : ""}>韓幣 (₩)</option>
-                    <option value="USD" ${order.currency === "USD" ? "selected" : ""}>美金 (US$)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">成本</div>
-                  <input class="field-input" type="number" value="${safeText(order.cost ?? '')}"
-                    oninput="updateOrderField('${order.id}','cost',this.value,'number')">
-                </div>
-
-                <div>
-                  <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">售價 (NT$)</div>
-                  <input class="field-input" type="number" value="${safeText(order.sellPrice ?? '')}"
-                    oninput="updateOrderField('${order.id}','sellPrice',this.value,'number')">
-                </div>
-              </div>
-
-              <div style="margin-top:10px; font-size:0.78rem; color:var(--text-sub);">
-                ※ 修改會即時儲存（不用另外按儲存）
-              </div>
-            </div>
-          `;
-
-          groupWrap.appendChild(row);
-        });
-
-        container.appendChild(groupWrap);
-      });
-    }
+    await createOrder({
+      type: "preorder",
+      country: "KR",
+      name,
+      qty: Number.isFinite(qty) && qty > 0 ? qty : 1,
+      customer,
+      buyer,
+      currency,
+      cost,
+      sellPrice: sellPrice || null,
+      isBought: false,
+      image: imageBase64,
+      extra: { isBought: false }
+    });
 
     renderKRPreorders();
-  </script>
+
+    document.getElementById("pName").value = "";
+    document.getElementById("pCustomer").value = "";
+    document.getElementById("pQty").value = "1";
+    document.getElementById("pPriceSell").value = "";
+    document.getElementById("pImg").value = "";
+    if (currency === "KRW") document.getElementById("pPriceKRW").value = "";
+    if (currency === "USD") document.getElementById("pPriceUSD").value = "";
+
+    document.getElementById("pBuyer").value = "";
+    document.querySelectorAll("#buyerGroup .btn-opt").forEach(b => b.classList.remove("active"));
+
+    alert("已儲存");
+  } catch (e) {
+    console.error(e);
+    alert("儲存失敗：" + (e?.message || e));
+  }
+}
+
+async function updateTop(id, field, rawValue, valueType = "string") {
+  let v = rawValue;
+  if (valueType === "number") {
+    v = rawValue === "" ? null : Number(rawValue);
+    if (Number.isNaN(v)) v = null;
+  } else if (valueType === "int") {
+    v = rawValue === "" ? null : parseInt(rawValue, 10);
+    if (Number.isNaN(v)) v = null;
+  } else {
+    v = String(rawValue ?? "").trim();
+  }
+  const patch = {};
+  patch[field] = v;
+  await updateOrder(id, patch, null);
+}
+
+async function updateExtra(id, extraPatch) {
+  await updateOrder(id, {}, extraPatch);
+}
+
+async function toggleBought(id, checked) {
+  await updateExtra(id, { isBought: !!checked });
+  renderKRPreorders();
+}
+
+async function updateOrderImage(id, fileInputEl) {
+  if (!fileInputEl.files || fileInputEl.files.length === 0) return;
+  const img = await readImageAsBase64(fileInputEl.files[0]);
+  await updateExtra(id, { imageBase64: img });
+  renderKRPreorders();
+}
+
+function toggleDetail(id) {
+  const el = document.getElementById("detail-" + id);
+  if (!el) return;
+  el.style.display = el.style.display === "none" ? "block" : "none";
+}
+
+async function deleteOne(id) {
+  const ok = confirm("確定要刪除這筆資料嗎？");
+  if (!ok) return;
+  await deleteOrder(id);
+  renderKRPreorders();
+}
+
+async function renderKRPreorders() {
+  const container = document.getElementById("krPreorderList");
+  const emptyState = document.getElementById("krEmptyState");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const all = await listOrders();
+  const list = all
+    .filter(o => o.type === "preorder" && o.country === "KR")
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+
+  if (list.length === 0) {
+    if (emptyState) emptyState.style.display = "block";
+    return;
+  } else {
+    if (emptyState) emptyState.style.display = "none";
+  }
+
+  const grouped = {};
+  for (const o of list) {
+    const key = o.customer ? String(o.customer).trim() : "未填顧客";
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(o);
+  }
+
+  Object.keys(grouped).forEach(customerName => {
+    const groupWrap = document.createElement("div");
+    groupWrap.style.border = "1px solid var(--soft-border)";
+    groupWrap.style.borderRadius = "18px";
+    groupWrap.style.background = "#fff";
+    groupWrap.style.boxShadow = "var(--shadow-soft)";
+    groupWrap.style.overflow = "hidden";
+
+    const header = document.createElement("div");
+    header.style.display = "flex";
+    header.style.alignItems = "center";
+    header.style.gap = "10px";
+    header.style.padding = "14px 16px";
+    header.style.borderBottom = "1px solid var(--soft-border)";
+    header.innerHTML = `
+      <div style="font-size:22px; line-height:1;">👤</div>
+      <div style="font-weight:800; font-size:1.05rem;">${safeText(customerName)}</div>
+    `;
+    groupWrap.appendChild(header);
+
+    grouped[customerName].forEach((order, i) => {
+      const isBought = !!(order.extra?.isBought);
+      const sym = currencySymbol(order.currency);
+
+      const row = document.createElement("div");
+      row.style.padding = "14px 16px";
+      row.style.borderBottom = i === grouped[customerName].length - 1 ? "none" : "1px solid var(--soft-border)";
+      row.style.background = isBought ? "#ecfdf3" : "#ffffff";
+
+      row.innerHTML = `
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+          <div style="display:flex; gap:12px; align-items:center; min-width:0;">
+            ${order.image ? `<img src="${order.image}" alt="img" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex:0 0 auto;">` : ""}
+            <div style="min-width:0;">
+              <div style="font-size:1.25rem; font-weight:800; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${safeText(order.name)}
+              </div>
+              <div style="margin-top:4px; color:var(--text-sub); font-size:0.9rem;">
+                成本 ${safeText(order.cost ?? 0)} ${safeText(sym)} ｜ 售價 ${safeText(order.sellPrice ?? 0)} NT$
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:10px; flex:0 0 auto;">
+            <label style="display:flex; align-items:center; gap:6px; font-size:0.95rem; color:${isBought ? "#16a34a" : "var(--text-sub)"};">
+              <input type="checkbox" ${isBought ? "checked" : ""} onchange="toggleBought('${order.id}', this.checked)">
+              ${isBought ? "已買" : "未買"}
+            </label>
+
+            <button type="button" onclick="toggleDetail('${order.id}')"
+              style="border:1px solid var(--soft-border); background:#fff; border-radius:8px; padding:6px 8px; cursor:pointer;">✏</button>
+
+            <button type="button" onclick="deleteOne('${order.id}')"
+              style="border:1px solid var(--soft-border); background:#fff; border-radius:8px; padding:6px 8px; cursor:pointer; color:#ef4444;">🗑</button>
+          </div>
+        </div>
+
+        <div id="detail-${order.id}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--soft-border);">
+          <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px;">
+            <div style="grid-column: 1 / -1;">
+              <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">商品照片</div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                ${order.image ? `<img src="${order.image}" alt="img" style="width:56px;height:56px;border-radius:12px;object-fit:cover;border:1px solid var(--soft-border);">` : ""}
+                <input type="file" accept="image/*" onchange="updateOrderImage('${order.id}', this)">
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">商品名</div>
+              <input class="field-input" type="text" value="${safeText(order.name)}"
+                oninput="updateTop('${order.id}','name',this.value,'string')">
+            </div>
+
+            <div>
+              <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">顧客</div>
+              <input class="field-input" type="text" value="${safeText(order.customer || '')}"
+                oninput="updateTop('${order.id}','customer',this.value,'string')">
+            </div>
+
+            <div>
+              <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">買手</div>
+              <select class="field-select" onchange="updateTop('${order.id}','buyer',this.value,'string')">
+                <option value="">未指定</option>
+                <option value="Nana"  ${order.buyer === "Nana" ? "selected" : ""}>Nana</option>
+                <option value="Cupid" ${order.buyer === "Cupid" ? "selected" : ""}>Cupid</option>
+              </select>
+            </div>
+
+            <div>
+              <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">數量</div>
+              <select class="field-select" onchange="updateTop('${order.id}','qty',this.value,'int')">
+                ${Array.from({length:10}, (_,k)=>k+1).map(n=>`
+                  <option value="${n}" ${Number(order.qty||1)===n ? "selected":""}>${n}</option>
+                `).join("")}
+              </select>
+            </div>
+
+            <div>
+              <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">幣別</div>
+              <select class="field-select"
+                onchange="updateTop('${order.id}','currency',this.value,'string').then(()=>renderKRPreorders());">
+                <option value="KRW" ${order.currency === "KRW" ? "selected" : ""}>韓幣 (₩)</option>
+                <option value="USD" ${order.currency === "USD" ? "selected" : ""}>美金 (US$)</option>
+              </select>
+            </div>
+
+            <div>
+              <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">成本</div>
+              <input class="field-input" type="number" value="${safeText(order.cost ?? '')}"
+                oninput="updateTop('${order.id}','cost',this.value,'number')">
+            </div>
+
+            <div>
+              <div style="font-size:0.78rem; color:var(--text-sub); margin-bottom:6px;">售價 (NT$)</div>
+              <input class="field-input" type="number" value="${safeText(order.sellPrice ?? '')}"
+                oninput="updateTop('${order.id}','sellPrice',this.value,'number')">
+            </div>
+          </div>
+
+          <div style="margin-top:10px; font-size:0.78rem; color:var(--text-sub);">
+            ※ 修改會即時儲存（不用另外按儲存）
+          </div>
+        </div>
+      `;
+
+      groupWrap.appendChild(row);
+    });
+
+    container.appendChild(groupWrap);
+  });
+}
+
+window.setCurrency = setCurrency;
+window.setBuyer = setBuyer;
+window.saveData = saveData;
+window.renderKRPreorders = renderKRPreorders;
+window.updateTop = updateTop;
+window.updateExtra = updateExtra;
+window.toggleBought = toggleBought;
+window.updateOrderImage = updateOrderImage;
+window.toggleDetail = toggleDetail;
+window.deleteOne = deleteOne;
+
+renderKRPreorders();
+</script>
 
 </body>
 </html>
