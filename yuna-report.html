@@ -264,8 +264,12 @@
   
     // settings structure:
     // {
-    //   customers: { "客名": { jpyRate: 0.22, feePerItem: 50, collapsed: false } },
-    //   items: { "orderId": { chargeFee: true, krTwdCost: 1234 } }
+    //   customers: {
+    //     "客名": { jpyRate: 0.22, feeTotalManual: 300, collapsed: false }
+    //   },
+    //   items: {
+    //     "orderId": { chargeFee: true, krTwdCost: 1234 }
+    //   }
     // }
     function loadSettings(){
       try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"); }
@@ -327,7 +331,6 @@
       return { amount: toNum(order.cost), currency: String(order.currency || "-"), label: "", extraNote: "" };
     }
   
-    // ----- Grouping -----
     function groupByCustomer(orders){
       const grouped = {};
       for (const o of orders){
@@ -360,7 +363,6 @@
       return (s.items[orderId] && s.items[orderId][key] != null) ? s.items[orderId][key] : defaultVal;
     }
   
-    // ----- Render helpers -----
     function toggleGroup(customer){
       const body = document.getElementById("body-" + customer);
       if (!body) return;
@@ -372,17 +374,18 @@
       if (btn) btn.textContent = isHidden ? "收合" : "展開";
     }
   
+    // ✅ 代購費改成「顧客手動總額」：feeTotalManual
     function calcCustomerTotals(customer, items){
       const foreignTotals = {};
       let twdTotal = 0;
       let sellTotal = 0;
   
       const jpyRate = toNum(getCustomerSetting(customer, "jpyRate", 0));
-      const feePerItem = toNum(getCustomerSetting(customer, "feePerItem", 0));
+      const feeTotalManual = toNum(getCustomerSetting(customer, "feeTotalManual", 0));
   
-      // ✅ 你要的「數量統計」（依你現行代購費算法：以品項為單位）
-      const totalItemCount = items.length;           // 不管收不收代購費的品項數
-      let feeItemCount = 0;                          // 有勾收代購費的品項數
+      // 統計：品項數（你原本的開關仍保留）
+      const totalItemCount = items.length;
+      let feeItemCount = 0;
   
       for (const o of items){
         const qty = Math.max(1, toNum(o.qty || 1));
@@ -402,11 +405,10 @@
         }
   
         const chargeFee = !!getItemSetting(o.id, "chargeFee", false);
-        if (chargeFee) feeItemCount += 1; // ✅ 保留你喜歡的：按「品項」計
+        if (chargeFee) feeItemCount += 1;
       }
   
-      const feeTotal = feePerItem * feeItemCount;
-      const profit = sellTotal + feeTotal - twdTotal;
+      const profit = sellTotal + feeTotalManual - twdTotal;
   
       return {
         foreignTotals,
@@ -414,8 +416,7 @@
         sellTotal,
         feeItemCount,
         totalItemCount,
-        feePerItem,
-        feeTotal,
+        feeTotalManual,
         profit,
         jpyRate
       };
@@ -432,13 +433,11 @@
       return parts.length ? parts.join(" / ") : "0";
     }
   
-    // ✅ 防止輸入跳掉：編輯中的顧客 & 欄位暫存（不必每次重畫）
+    // 防止輸入跳掉：oninput只存，onblur再render
     let activeCustomerForInput = null;
   
     function render(){
       const orders = loadOrders();
-  
-      // 仍維持你原本：只拿 preorder
       const usable = orders.filter(o => (o && o.type === "preorder"));
   
       const root = document.getElementById("groups");
@@ -492,11 +491,6 @@
         const controls = document.createElement("div");
         controls.className = "controls-row";
   
-        // ✅ 代購費 input：oninput 只存，不 render；onblur/Enter 才 render
-        const feeCurrent = (activeCustomerForInput === customer)
-          ? (getCustomerSetting(customer,'feePerItem','') ?? '')
-          : (getCustomerSetting(customer,'feePerItem','') ?? '');
-  
         const rateCtrl = hasJP ? `
           <div class="ctrl">
             <label>💱 JPY → NT 匯率（1 JPY = ? NT）</label>
@@ -505,7 +499,7 @@
               step="0.0001"
               value="${esc(String(totals.jpyRate || ""))}"
               placeholder="例如 0.22"
-              oninput="(function(v){ setCustomerSetting('${customer}','jpyRate', v); })(this.value)"
+              oninput="(function(v){ setCustomerSetting('${customer}','jpyRate', v); activeCustomerForInput='${customer}'; })(this.value)"
               onblur="render()"
               onkeydown="if(event.key==='Enter'){ this.blur(); }"
               onclick="event.stopPropagation(); activeCustomerForInput='${customer}';"
@@ -513,16 +507,17 @@
           </div>
         ` : "";
   
+        const feeManual = getCustomerSetting(customer, "feeTotalManual", "");
         const feeCtrl = `
           <div class="ctrl">
-            <label>🧾 每件代購費（NT$）（只在此顧客結算用）</label>
+            <label>🧾 這位顧客「總代購費」（NT$）你手動輸入</label>
             <input
               type="number"
               step="1"
               inputmode="numeric"
-              value="${esc(String(feeCurrent || ""))}"
-              placeholder="例如 50"
-              oninput="(function(v){ setCustomerSetting('${customer}','feePerItem', v); activeCustomerForInput='${customer}'; })(this.value)"
+              value="${esc(String(feeManual ?? ""))}"
+              placeholder="例如 300"
+              oninput="(function(v){ setCustomerSetting('${customer}','feeTotalManual', v); activeCustomerForInput='${customer}'; })(this.value)"
               onblur="render()"
               onkeydown="if(event.key==='Enter'){ this.blur(); }"
               onclick="event.stopPropagation(); activeCustomerForInput='${customer}';"
@@ -532,6 +527,7 @@
   
         controls.innerHTML = rateCtrl + feeCtrl;
   
+        // items
         const list = document.createElement("div");
         list.className = "items";
   
@@ -542,7 +538,6 @@
           const f = getForeignCostInfo(o);
           const isJP = o.country === "JP";
           const isKR = o.country === "KR";
-  
           const chargeFee = !!getItemSetting(o.id, "chargeFee", false);
   
           let twdLine = 0;
@@ -663,7 +658,6 @@
           list.appendChild(item);
         }
   
-        // summary boxes
         const totals2 = calcCustomerTotals(customer, items);
         const summary = document.createElement("div");
         summary.className = "summary";
@@ -672,7 +666,7 @@
           <div class="sum-box">
             <div class="k">品項數量統計</div>
             <div class="v">
-              ${esc(fmt(totals2.feeItemCount,0))} <small>收代購費</small>
+              ${esc(fmt(totals2.feeItemCount,0))} <small>勾選收代購費</small>
               ／ ${esc(fmt(totals2.totalItemCount,0))} <small>總品項</small>
             </div>
           </div>
@@ -693,11 +687,8 @@
           </div>
   
           <div class="sum-box">
-            <div class="k">代購費總和</div>
-            <div class="v">
-              NT$ ${esc(fmt(totals2.feeTotal,0))}
-              <small>（${esc(fmt(totals2.feePerItem,0))} × 勾選${esc(fmt(totals2.feeItemCount,0))}件）</small>
-            </div>
+            <div class="k">代購費（手動總額）</div>
+            <div class="v">NT$ ${esc(fmt(totals2.feeTotalManual,0))}</div>
           </div>
   
           <div class="sum-box profit">
