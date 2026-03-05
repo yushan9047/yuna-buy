@@ -49,8 +49,7 @@
 
         <!-- 🇯🇵 日本 預購 -->
         <a class="card-link" href="preorder-jp.html">
-          <!-- 🇯🇵 日本 預購 -->
-            <div class="card card--preorder-jp">
+          <div class="card card--preorder-jp">
             <div>
               <div class="card-title">
                 預購商品
@@ -66,7 +65,6 @@
 
         <!-- 🇰🇷 韓國 預購 -->
         <a class="card-link" href="preorder-kr.html">
-          <!-- 🇰🇷 韓國 預購 -->
           <div class="card card--preorder-kr">
             <div>
               <div class="card-title">
@@ -122,6 +120,27 @@
       </div>
     </main>
   </div>
+
+  <!-- ✅ 新增：先載入共用 api.js -->
+  <script src="api.js"></script>
+
+  <script>
+    (async function init() {
+      // 沒 PIN → 跳 PIN modal
+      if (!window.YunaAPI.ensurePin()) return;
+
+      // 有 PIN → 從 Supabase 拉資料並寫入 localStorage
+      try {
+        await window.YunaAPI.syncFromServerToLocal();
+        // 你要的話可以加提示：console.log("Synced");
+      } catch (e) {
+        console.error(e);
+        alert("同步 Supabase 失敗：請檢查 PIN 或 Edge Function 設定。");
+        // 讓使用者重新輸入 PIN
+        window.YunaAPI.clearPin();
+        window.YunaAPI.openPinModal();
+      }
+    })();
+  </script>
 </body>
 </html>
-
