@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
   <div class="header-bar">
     <button class="back-btn" type="button" onclick="window.history.back()">← 返回</button>
     <h2>🇰🇷 新增現場採購（韓國）</h2>
@@ -16,7 +15,6 @@
 
   <main class="page-body">
     <div class="card">
-
       <div class="form-group">
         <label for="pImg">📷 商品照片</label>
         <input type="file" id="pImg" accept="image/*">
@@ -62,98 +60,86 @@
       <div class="form-group">
         <label>🧤 負責買手</label>
         <div class="btn-group" id="buyBuyerGroup">
-          <button class="btn-opt" type="button"
-                  onclick="setBuyer('Nana', this)">Nana</button>
-          <button class="btn-opt" type="button"
-                  onclick="setBuyer('Cupid', this)">Cupid</button>
+          <button class="btn-opt" type="button" onclick="setBuyer('Nana', this)">Nana</button>
+          <button class="btn-opt" type="button" onclick="setBuyer('Cupid', this)">Cupid</button>
         </div>
         <input type="hidden" id="pBuyer">
       </div>
 
-      <button class="submit-btn" type="button" onclick="saveData()">
-        🚀 確認儲存
-      </button>
-
+      <button class="submit-btn" type="button" onclick="saveData()">🚀 確認儲存</button>
     </div>
   </main>
 
-  <script src="api.js"></script>
+<script type="module">
+import { ensurePinOrRedirect } from "./pin.js";
+import { createOrder, readImageAsBase64 } from "./orders-api.js";
+ensurePinOrRedirect();
 
-  <script>
-    (function initPin() {
-      if (!window.YunaAPI.ensurePin()) return;
-    })();
+function setBuyer(name, btnEl) {
+  document.getElementById('pBuyer').value = name;
+  const group = document.getElementById('buyBuyerGroup');
+  group.querySelectorAll('.btn-opt').forEach(btn => btn.classList.remove('active'));
+  btnEl.classList.add('active');
+}
 
-    function setBuyer(name, btnEl) {
-      const buyerInput = document.getElementById('pBuyer');
-      buyerInput.value = name;
-
-      const group = document.getElementById('buyBuyerGroup');
-      const buttons = group.querySelectorAll('.btn-opt');
-      buttons.forEach(btn => btn.classList.remove('active'));
-
-      btnEl.classList.add('active');
+async function saveData() {
+  try {
+    const fileInput = document.getElementById("pImg");
+    let imageBase64 = null;
+    if (fileInput?.files?.length) {
+      imageBase64 = await readImageAsBase64(fileInput.files[0]);
     }
 
-    async function saveData() {
-      if (!window.YunaAPI.ensurePin()) return;
+    const name = document.getElementById('pName').value.trim();
+    const priceKRW = Number(document.getElementById('pPriceKRW').value || 0);
+    const priceUSD = Number(document.getElementById('pPriceUSD').value || 0);
+    const sellPrice = Number(document.getElementById('pPriceSell').value || 0);
+    const qty = Number(document.getElementById('pQty').value || 1);
+    const loc = document.getElementById('pLoc').value.trim();
+    const customer = document.getElementById('pCustomer').value.trim();
+    const buyer = document.getElementById('pBuyer').value;
 
-      const data = {
-        name: document.getElementById('pName').value.trim(),
-        priceKRW: Number(document.getElementById('pPriceKRW').value || 0),
-        priceUSD: Number(document.getElementById('pPriceUSD').value || 0),
-        sellPrice: Number(document.getElementById('pPriceSell').value || 0),
-        qty: Number(document.getElementById('pQty').value || 1),
-        loc: document.getElementById('pLoc').value.trim(),
-        customer: document.getElementById('pCustomer').value.trim(),
-        buyer: document.getElementById('pBuyer').value
-      };
+    if (!name) return alert("請輸入品名");
+    if (!priceKRW && !priceUSD) return alert("請至少輸入一個購入價格（韓幣或美金）");
+    if (!buyer) return alert("請選擇負責買手");
 
-      if (!data.name) return alert("請輸入品名");
-      if (!data.priceKRW && !data.priceUSD) return alert("請至少輸入一個購入價格（韓幣或美金）");
-      if (!data.buyer) return alert("請選擇負責買手");
+    // 主幣別與第二成本：只用你 DB 一定有的 currency/cost，其它塞 extra
+    let currency = null, cost = null;
+    let currency2 = null, cost2 = null;
 
-      let currency = null, cost = null, currency2 = null, cost2 = null;
-      if (data.priceKRW) {
-        currency = 'KRW';
-        cost = data.priceKRW;
-      }
-      if (data.priceUSD) {
-        if (!currency) {
-          currency = 'USD';
-          cost = data.priceUSD;
-        } else {
-          currency2 = 'USD';
-          cost2 = data.priceUSD;
-        }
-      }
-
-      const order = {
-        id: 'O-' + Date.now().toString(36),
-        type: 'onsite',
-        country: 'KR',
-        name: data.name,
-        qty: data.qty,
-        buyer: data.buyer,
-        customer: data.customer,
-        loc: data.loc,
-        currency,
-        cost,
-        currency2,
-        cost2,
-        sellPrice: data.sellPrice || null
-      };
-
-      try {
-        await window.YunaAPI.saveOrderToServer(order);
-        await window.YunaAPI.syncFromServerToLocal();
-        alert("已儲存到採購明細（韓國現場採購 / Supabase）");
-      } catch (e) {
-        console.error(e);
-        alert("儲存失敗：" + (e?.message || "未知錯誤"));
-      }
+    if (priceKRW) { currency = "KRW"; cost = priceKRW; }
+    if (priceUSD) {
+      if (!currency) { currency = "USD"; cost = priceUSD; }
+      else { currency2 = "USD"; cost2 = priceUSD; }
     }
-  </script>
 
+    await createOrder({
+      type: "onsite",
+      country: "KR",
+      name,
+      qty,
+      buyer,
+      customer,
+      currency,
+      cost,
+      sellPrice: sellPrice || null,
+      loc,
+      image: imageBase64,
+      currency2,
+      cost2,
+      extra: { currency2, cost2 }
+    });
+
+    alert("已儲存到 Supabase（韓國現場採購）");
+    location.reload();
+  } catch (e) {
+    console.error(e);
+    alert("儲存失敗：" + (e?.message || e));
+  }
+}
+
+window.setBuyer = setBuyer;
+window.saveData = saveData;
+</script>
 </body>
 </html>
