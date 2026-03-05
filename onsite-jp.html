@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- 頂部列 -->
   <div class="header-bar">
     <button class="back-btn" type="button" onclick="window.history.back()">← 返回</button>
     <h2>新增現場採購(日本)</h2>
@@ -16,37 +15,30 @@
 
   <main class="page-body">
     <div class="card">
-      <!-- 商品照片 -->
       <div class="form-group">
         <label for="pImg">📷 商品照片</label>
         <input type="file" id="pImg" accept="image/*">
       </div>
 
-      <!-- 商品品名 -->
       <div class="form-group">
         <label for="pName">📦 品名</label>
         <input type="text" id="pName" placeholder="請輸入品名">
       </div>
 
-      <!-- 含稅成本 -->
       <div class="form-group">
         <label for="pPriceTax">💰 含稅成本 (¥)</label>
         <input type="number" id="pPriceTax" placeholder="0" min="0" step="1">
       </div>
 
-      <!-- 退稅設定 -->
       <div class="form-group">
         <label>🏷️ 退稅設定</label>
         <div class="btn-group">
-          <button id="buyTaxBtnYes" class="btn-opt" type="button"
-                  onclick="toggleBuyTax(true)">有退稅</button>
-          <button id="buyTaxBtnNo" class="btn-opt active" type="button"
-                  onclick="toggleBuyTax(false)">無退稅</button>
+          <button id="buyTaxBtnYes" class="btn-opt" type="button" onclick="toggleBuyTax(true)">有退稅</button>
+          <button id="buyTaxBtnNo" class="btn-opt active" type="button" onclick="toggleBuyTax(false)">無退稅</button>
         </div>
         <input type="hidden" id="buyIsTaxFree" value="false">
       </div>
 
-      <!-- 稅率 + 退稅價 -->
       <div class="row-two" style="display:flex; gap:12px;">
         <div class="form-group" id="buyTaxRateGroup" style="flex:1; display:none;">
           <label for="buyTaxRate">％ 稅率</label>
@@ -58,13 +50,11 @@
         </div>
       </div>
 
-      <!-- 販售價格 -->
       <div class="form-group">
         <label for="pPriceSell">💎 販售價格 (NT$)</label>
         <input type="number" id="pPriceSell" placeholder="0" min="0" step="1">
       </div>
 
-      <!-- 數量與地點 -->
       <div class="row-two" style="display:flex; gap:12px;">
         <div class="form-group" style="flex:1">
           <label for="pQty">🔢 數量</label>
@@ -76,13 +66,11 @@
         </div>
       </div>
 
-      <!-- 顧客名稱 -->
       <div class="form-group">
         <label for="pCustomer">👤 顧客名</label>
         <input type="text" id="pCustomer" placeholder="客名">
       </div>
 
-      <!-- 負責買手 -->
       <div class="form-group">
         <label>🧤 負責買手</label>
         <div class="btn-group" id="buyBuyerGroup">
@@ -97,12 +85,9 @@
                     margin-top:15px; border:1px solid var(--soft-border);">
           <label style="color:var(--primary);">💳 選擇卡片</label>
           <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
-            <button class="btn-opt" type="button"
-                    onclick="setRayCard('na爸卡', this)" style="padding:10px">na爸卡</button>
-            <button class="btn-opt" type="button"
-                    onclick="setRayCard('ray卡', this)" style="padding:10px">ray卡</button>
-            <button class="btn-opt" type="button"
-                    onclick="setRayCard('qp卡', this)" style="padding:10px">qp卡</button>
+            <button class="btn-opt" type="button" onclick="setRayCard('na爸卡', this)" style="padding:10px">na爸卡</button>
+            <button class="btn-opt" type="button" onclick="setRayCard('ray卡', this)" style="padding:10px">ray卡</button>
+            <button class="btn-opt" type="button" onclick="setRayCard('qp卡', this)" style="padding:10px">qp卡</button>
           </div>
           <input type="hidden" id="pRayCard">
         </div>
@@ -112,30 +97,10 @@
     </div>
   </main>
 
-  <!-- ✅ 新增：共用 api.js -->
-  <script src="api.js"></script>
-
 <script type="module">
-
-import { supabase } from "./supabase-client.js";
-
-// PIN 檢查
-const PIN = "1234";
-
-function checkPin() {
-  const saved = localStorage.getItem("yuna_pin_ok");
-  if (saved === "1") return;
-
-  const input = prompt("請輸入 4 碼 PIN");
-  if (input === PIN) {
-    localStorage.setItem("yuna_pin_ok", "1");
-  } else {
-    alert("PIN 錯誤");
-    location.href = "index.html";
-  }
-}
-
-checkPin();
+import { ensurePinOrRedirect } from "./pin.js";
+import { createOrder, readImageAsBase64 } from "./orders-api.js";
+ensurePinOrRedirect();
 
 function toggleBuyTax(hasTaxFree) {
   const yesBtn = document.getElementById('buyTaxBtnYes');
@@ -162,80 +127,79 @@ function toggleBuyTax(hasTaxFree) {
 }
 
 function setBuyer(name, btnEl) {
-  const buyerInput = document.getElementById('pBuyer');
-  buyerInput.value = name;
+  document.getElementById('pBuyer').value = name;
 
   const group = document.getElementById('buyBuyerGroup');
-  const buttons = group.querySelectorAll('.btn-opt');
-  buttons.forEach(btn => btn.classList.remove('active'));
-
+  group.querySelectorAll('.btn-opt').forEach(btn => btn.classList.remove('active'));
   btnEl.classList.add('active');
 
   const rayCardBox = document.getElementById('rayCardOptions');
-
   if (name === 'Ray') {
     rayCardBox.style.display = 'block';
   } else {
     rayCardBox.style.display = 'none';
     document.getElementById('pRayCard').value = '';
+    rayCardBox.querySelectorAll('.btn-opt').forEach(btn => btn.classList.remove('active'));
   }
 }
 
 function setRayCard(cardName, btnEl) {
-  const cardInput = document.getElementById('pRayCard');
-  cardInput.value = cardName;
-
-  const rayCardBox = document.getElementById('rayCardOptions');
-  const buttons = rayCardBox.querySelectorAll('.btn-opt');
-  buttons.forEach(btn => btn.classList.remove('active'));
-
+  document.getElementById('pRayCard').value = cardName;
+  const box = document.getElementById('rayCardOptions');
+  box.querySelectorAll('.btn-opt').forEach(btn => btn.classList.remove('active'));
   btnEl.classList.add('active');
 }
 
 async function saveData() {
+  try {
+    const fileInput = document.getElementById("pImg");
+    let imageBase64 = null;
+    if (fileInput?.files?.length) {
+      imageBase64 = await readImageAsBase64(fileInput.files[0]);
+    }
 
-  const name = document.getElementById('pName').value.trim();
-  const cost = Number(document.getElementById('pPriceTax').value);
-  const sellPrice = Number(document.getElementById('pPriceSell').value);
-  const qty = Number(document.getElementById('pQty').value);
-  const loc = document.getElementById('pLoc').value;
-  const customer = document.getElementById('pCustomer').value;
-  const buyer = document.getElementById('pBuyer').value;
+    const name = document.getElementById('pName').value.trim();
+    const cost = Number(document.getElementById('pPriceTax').value || 0);
+    const sellPrice = Number(document.getElementById('pPriceSell').value || 0);
+    const qty = Number(document.getElementById('pQty').value || 1);
+    const loc = document.getElementById('pLoc').value.trim();
+    const customer = document.getElementById('pCustomer').value.trim();
+    const buyer = document.getElementById('pBuyer').value;
 
-  const isTaxFree = document.getElementById('buyIsTaxFree').value === 'true';
-  const taxRate = Number(document.getElementById('buyTaxRate').value);
-  const taxFreePrice = Number(document.getElementById('buyTaxFreePrice').value);
-  const rayCard = document.getElementById('pRayCard').value;
+    const isTaxFree = document.getElementById('buyIsTaxFree').value === 'true';
+    const taxRate = Number(document.getElementById('buyTaxRate').value || 0);
+    const taxFreePrice = Number(document.getElementById('buyTaxFreePrice').value || 0);
+    const rayCard = document.getElementById('pRayCard').value;
 
-  if (!name) return alert("請輸入品名");
+    if (!name) return alert('請輸入品名');
+    if (!cost) return alert('請輸入含稅成本');
+    if (!buyer) return alert('請選擇負責買手');
 
-  const { data, error } = await supabase
-    .from("orders")
-    .insert({
+    await createOrder({
       type: "onsite",
       country: "JP",
       name,
       qty,
       buyer,
       customer,
-      cost,
-      sell_price: sellPrice,
       currency: "JPY",
+      cost,
+      sellPrice: sellPrice || null,
       loc,
+      image: imageBase64,
       extra: {
         isTaxFree,
-        taxRate,
-        taxFreePrice,
-        rayCard
+        taxRate: isTaxFree ? taxRate : "",
+        taxFreePrice: isTaxFree ? taxFreePrice : "",
+        rayCard: buyer === "Ray" ? rayCard : ""
       }
     });
 
-  if (error) {
-    alert("儲存失敗：" + error.message);
-    console.error(error);
-  } else {
-    alert("已成功存入 Supabase！");
+    alert("已儲存到 Supabase（日本現場採購）");
     location.reload();
+  } catch (e) {
+    console.error(e);
+    alert("儲存失敗：" + (e?.message || e));
   }
 }
 
@@ -243,8 +207,6 @@ window.toggleBuyTax = toggleBuyTax;
 window.setBuyer = setBuyer;
 window.setRayCard = setRayCard;
 window.saveData = saveData;
-
 </script>
-<script type="module" src="supabase-client.js"></script>
 </body>
 </html>
