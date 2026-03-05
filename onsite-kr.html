@@ -9,7 +9,6 @@
 </head>
 <body>
 
-  <!-- Header -->
   <div class="header-bar">
     <button class="back-btn" type="button" onclick="window.history.back()">← 返回</button>
     <h2>🇰🇷 新增現場採購（韓國）</h2>
@@ -18,19 +17,16 @@
   <main class="page-body">
     <div class="card">
 
-      <!-- 商品照片 -->
       <div class="form-group">
         <label for="pImg">📷 商品照片</label>
         <input type="file" id="pImg" accept="image/*">
       </div>
 
-      <!-- 商品品名 -->
       <div class="form-group">
         <label for="pName">📦 品名</label>
         <input type="text" id="pName" placeholder="請輸入品名">
       </div>
 
-      <!-- 購入價格：韓幣 & 美金 -->
       <div class="row-two">
         <div class="form-group" style="flex:1;">
           <label for="pPriceKRW">💰 韓幣購入價格 (₩)</label>
@@ -42,13 +38,11 @@
         </div>
       </div>
 
-      <!-- 販售價格（台幣） -->
       <div class="form-group">
         <label for="pPriceSell">💎 販售價格 (NT$)</label>
         <input type="number" id="pPriceSell" placeholder="0" min="0" step="1">
       </div>
 
-      <!-- 數量 + 地點 -->
       <div class="row-two">
         <div class="form-group" style="flex:1;">
           <label for="pQty">🔢 數量</label>
@@ -60,13 +54,11 @@
         </div>
       </div>
 
-      <!-- 顧客 -->
       <div class="form-group">
         <label for="pCustomer">👤 顧客名</label>
         <input type="text" id="pCustomer" placeholder="客名">
       </div>
 
-      <!-- 買手（只有 Nana / Cupid） -->
       <div class="form-group">
         <label>🧤 負責買手</label>
         <div class="btn-group" id="buyBuyerGroup">
@@ -78,7 +70,6 @@
         <input type="hidden" id="pBuyer">
       </div>
 
-      <!-- 儲存 -->
       <button class="submit-btn" type="button" onclick="saveData()">
         🚀 確認儲存
       </button>
@@ -86,87 +77,83 @@
     </div>
   </main>
 
+  <script src="api.js"></script>
+
   <script>
-  const STORAGE_KEY = 'yunaOrders';
+    (function initPin() {
+      if (!window.YunaAPI.ensurePin()) return;
+    })();
 
-  function addOrderToStorage(order) {
-    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    list.push(order);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  }
+    function setBuyer(name, btnEl) {
+      const buyerInput = document.getElementById('pBuyer');
+      buyerInput.value = name;
 
-  function setBuyer(name, btnEl) {
-    const buyerInput = document.getElementById('pBuyer');
-    buyerInput.value = name;
+      const group = document.getElementById('buyBuyerGroup');
+      const buttons = group.querySelectorAll('.btn-opt');
+      buttons.forEach(btn => btn.classList.remove('active'));
 
-    const group = document.getElementById('buyBuyerGroup');
-    const buttons = group.querySelectorAll('.btn-opt');
-    buttons.forEach(btn => btn.classList.remove('active'));
-
-    btnEl.classList.add('active');
-  }
-
-  function saveData() {
-    const data = {
-      name: document.getElementById('pName').value.trim(),
-      priceKRW: Number(document.getElementById('pPriceKRW').value || 0),
-      priceUSD: Number(document.getElementById('pPriceUSD').value || 0),
-      sellPrice: Number(document.getElementById('pPriceSell').value || 0),
-      qty: Number(document.getElementById('pQty').value || 1),
-      loc: document.getElementById('pLoc').value.trim(),
-      customer: document.getElementById('pCustomer').value.trim(),
-      buyer: document.getElementById('pBuyer').value
-    };
-
-    if (!data.name) {
-      alert("請輸入品名");
-      return;
-    }
-    if (!data.priceKRW && !data.priceUSD) {
-      alert("請至少輸入一個購入價格（韓幣或美金）");
-      return;
-    }
-    if (!data.buyer) {
-      alert("請選擇負責買手");
-      return;
+      btnEl.classList.add('active');
     }
 
-    // 主幣別 / 第二幣別
-    let currency = null, cost = null, currency2 = null, cost2 = null;
-    if (data.priceKRW) {
-      currency = 'KRW';
-      cost = data.priceKRW;
-    }
-    if (data.priceUSD) {
-      if (!currency) {
-        currency = 'USD';
-        cost = data.priceUSD;
-      } else {
-        currency2 = 'USD';
-        cost2 = data.priceUSD;
+    async function saveData() {
+      if (!window.YunaAPI.ensurePin()) return;
+
+      const data = {
+        name: document.getElementById('pName').value.trim(),
+        priceKRW: Number(document.getElementById('pPriceKRW').value || 0),
+        priceUSD: Number(document.getElementById('pPriceUSD').value || 0),
+        sellPrice: Number(document.getElementById('pPriceSell').value || 0),
+        qty: Number(document.getElementById('pQty').value || 1),
+        loc: document.getElementById('pLoc').value.trim(),
+        customer: document.getElementById('pCustomer').value.trim(),
+        buyer: document.getElementById('pBuyer').value
+      };
+
+      if (!data.name) return alert("請輸入品名");
+      if (!data.priceKRW && !data.priceUSD) return alert("請至少輸入一個購入價格（韓幣或美金）");
+      if (!data.buyer) return alert("請選擇負責買手");
+
+      let currency = null, cost = null, currency2 = null, cost2 = null;
+      if (data.priceKRW) {
+        currency = 'KRW';
+        cost = data.priceKRW;
+      }
+      if (data.priceUSD) {
+        if (!currency) {
+          currency = 'USD';
+          cost = data.priceUSD;
+        } else {
+          currency2 = 'USD';
+          cost2 = data.priceUSD;
+        }
+      }
+
+      const order = {
+        id: 'O-' + Date.now().toString(36),
+        type: 'onsite',
+        country: 'KR',
+        name: data.name,
+        qty: data.qty,
+        buyer: data.buyer,
+        customer: data.customer,
+        loc: data.loc,
+        currency,
+        cost,
+        currency2,
+        cost2,
+        sellPrice: data.sellPrice || null
+      };
+
+      try {
+        await window.YunaAPI.saveOrderToServer(order);
+        await window.YunaAPI.syncFromServerToLocal();
+        alert("已儲存到採購明細（韓國現場採購 / Supabase）");
+      } catch (e) {
+        console.error(e);
+        alert("儲存失敗：" + (e?.message || "未知錯誤"));
       }
     }
-
-    const order = {
-      id: 'O-' + Date.now().toString(36),
-      type: 'onsite',
-      country: 'KR',
-      name: data.name,
-      qty: data.qty,
-      buyer: data.buyer,
-      customer: data.customer,
-      loc: data.loc,
-      currency,
-      cost,
-      currency2,
-      cost2,
-      sellPrice: data.sellPrice || null
-    };
-
-    addOrderToStorage(order);
-    alert("已儲存到採購明細（韓國現場採購）");
-  }
-</script>
+  </script>
 
 </body>
 </html>
