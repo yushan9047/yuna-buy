@@ -8,7 +8,7 @@ const YUNA_PIN_KEY = "yunaPin";
  * 位置：Supabase Dashboard → Edge Functions → Functions → swift-api → URL（複製）
  * 例如：https://xxxx.supabase.co/functions/v1/swift-api
  */
-const YUNA_API_URL = "https://YOUR_PROJECT_REF.supabase.co/functions/v1/swift-api";
+const YUNA_API_URL = "https://iaiobzgajtbllszpllbx.supabase.co/functions/v1/swift-api";
 
 /**
  * 2) PIN 傳給後端的方式（你可以二選一，後端也要配合）
