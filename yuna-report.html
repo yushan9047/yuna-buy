@@ -257,9 +257,12 @@
     const STORAGE_KEY = "yunaOrders";
     const SETTINGS_KEY = "yunaDetailSettings";
   
-    function loadOrders() {
-      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
-      catch(e){ console.error(e); return []; }
+    import { ensurePinOrRedirect } from "./pin.js";
+    import { listOrders } from "./orders-api.js";
+    ensurePinOrRedirect();
+    
+    async function loadOrders() {
+      return await listOrders();
     }
   
     // settings structure:
